@@ -28,3 +28,17 @@ export function modelLabel(detail: RunDetail | null, checkpointId: string | null
   const checkpoint = detail.checkpoints.find((c) => c.id === checkpointId);
   return `${detail.algo.toUpperCase()} · ${checkpoint?.label ?? checkpointId}`;
 }
+
+/** Pasos de entrenamiento que representa un checkpoint (para marcarlo en la curva). */
+export function stepsOfCheckpoint(detail: RunDetail, checkpointId: string): number | null {
+  const checkpoint = detail.checkpoints.find((c) => c.id === checkpointId);
+  if (!checkpoint) return null;
+  if (checkpoint.steps !== null) return checkpoint.steps;
+  const rated = detail.curve.filter((p) => p.success_rate !== null);
+  if (checkpointId === "best" && rated.length > 0) {
+    // EvalCallback guarda "best" en la primera evaluación que alcanza el máximo
+    const best = Math.max(...rated.map((p) => p.success_rate ?? 0));
+    return rated.find((p) => p.success_rate === best)?.steps ?? null;
+  }
+  return detail.curve.at(-1)?.steps ?? null; // "final"
+}

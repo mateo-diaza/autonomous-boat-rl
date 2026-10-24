@@ -1,12 +1,12 @@
 "use client";
 
-import { Keyboard, LineChart } from "lucide-react";
+import { Keyboard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { BrainPanel } from "@/components/brain/BrainPanel";
+import { LearningCurve } from "@/components/charts/LearningCurve";
 import { ConnectionBadge } from "@/components/dashboard/ConnectionBadge";
 import { ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
-import { Widget } from "@/components/dashboard/Widget";
 import { Button } from "@/components/ui/button";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { SimStage, type MapTool } from "@/components/simulation/SimStage";
@@ -140,9 +140,7 @@ export function Dashboard() {
             />
             <BrainPanel sim={sim} world={world} algo={snapshot?.status.model?.algo ?? null} />
             <VoyagePanel sim={sim} episodes={episodes} />
-            <Widget title="Aprendizaje" icon={<LineChart />}>
-              <p className="text-sm text-muted-foreground">La curva de aprendizaje llegará en la fase 5.</p>
-            </Widget>
+            <LearningCurve detail={detail} checkpointId={checkpointId} onSelectCheckpoint={selectCheckpoint} />
           </section>
         </div>
       </main>
