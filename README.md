@@ -90,7 +90,7 @@ tensorboard --logdir training/logs
 
 ## Despliegue
 
-Backend en Hugging Face Spaces (Docker) y frontend en Vercel: pasos en [deploy/README.md](deploy/README.md).
+Backend en Hugging Face Spaces (SDK Gradio, gratis) y frontend en Vercel: pasos en [deploy/README.md](deploy/README.md).
 
 ## Calidad
 

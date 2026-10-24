@@ -1,6 +1,7 @@
 # Despliegue
 
-- **Backend** (FastAPI + WebSockets + modelos) → [Hugging Face Spaces](https://huggingface.co/spaces) con Docker. Gratis, 2 CPU y 16 GB de RAM.
+- **Backend** (FastAPI + WebSockets + modelos) → [Hugging Face Spaces](https://huggingface.co/spaces) con el SDK
+  Gradio (el de Docker es de pago). Gratis, 2 CPU y 16 GB de RAM. No se usa Gradio: `app.py` arranca el backend.
 - **Frontend** (Next.js) → [Vercel](https://vercel.com).
 
 El backend necesita un proceso siempre encendido (una simulación por visitante a 30 Hz, PyTorch y los
@@ -8,16 +9,16 @@ modelos en disco), así que no cabe en plataformas serverless.
 
 ## 1. Backend en Hugging Face Spaces
 
-1. Crea un Space en <https://huggingface.co/new-space> con **SDK: Docker** (plantilla *Blank*) y hardware
-   *CPU basic* (gratis). Su URL pública será `https://<usuario>-<space>.hf.space`.
+1. Crea un Space **público** en <https://huggingface.co/new-space> con **SDK: Gradio** (plantilla *Blank*) y
+   hardware *CPU basic* (gratis). Su URL pública será `https://<usuario>-<space>.hf.space`.
 2. Empaqueta código y modelos:
 
    ```bash
    deploy/build_space.sh
    ```
 
-   Genera `deploy/space/build/` con el `Dockerfile`, el backend, el entorno y los modelos que ve la web
-   (sin `_archivo/` ni experimentos `exp_*`).
+   Genera `deploy/space/build/` con `app.py`, el backend, el entorno y los modelos que ve la web
+   (sin `_archivo/` ni experimentos `exp_*`). La cabecera de `deploy/space/README.md` configura el Space.
 3. Súbelo (una vez: `pip install -U huggingface_hub` y `hf auth login` con un token de escritura):
 
    ```bash
@@ -41,13 +42,15 @@ Para actualizar modelos o código: repite los pasos 2 y 3.
    (sin barra final; los WebSockets pasan solos a `wss://`).
 4. *Deploy*. Si cambias la variable después, vuelve a desplegar: se incrusta al compilar.
 
-## Probar la imagen en local
+## Probar el paquete en local
 
 ```bash
 deploy/build_space.sh
-docker build -t bitacora-api deploy/space/build
-docker run --rm -p 7860:7860 -e CORS_ORIGINS=http://localhost:3000 bitacora-api
+cd deploy/space/build && ../../../.venv/bin/python app.py
 ```
+
+En plataformas con Docker (Railway, Fly.io, Spaces de pago) se usa el `Dockerfile` del paquete:
+`docker build -t bitacora-api deploy/space/build` y `docker run -p 7860:7860 -e CORS_ORIGINS=... bitacora-api`.
 
 Y el frontend apuntando a ella: `NEXT_PUBLIC_API_URL=http://localhost:7860 pnpm --dir frontend dev`.
 

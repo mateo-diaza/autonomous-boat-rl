@@ -1,4 +1,5 @@
-# Backend de la Bitácora para Hugging Face Spaces (SDK Docker).
+# Backend de la Bitácora en cualquier plataforma con Docker (Railway, Fly.io, Spaces de pago...).
+# En el Space gratuito (SDK Gradio) no se usa: allí arranca app.py.
 # Se construye desde la carpeta que genera deploy/build_space.sh, no desde la raíz del repo.
 FROM python:3.12-slim
 

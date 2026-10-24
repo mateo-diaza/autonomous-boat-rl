@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Empaqueta el backend, el entorno y los modelos en deploy/space/build/, listo para subir a un
-# Space de Hugging Face (SDK Docker). Uso: deploy/build_space.sh   (desde cualquier carpeta)
+# Space de Hugging Face (SDK Gradio, gratuito; también vale para Docker). Uso: deploy/build_space.sh   (desde cualquier carpeta)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,7 +9,7 @@ MODELS="$ROOT/training/models"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/training/models"
-cp "$ROOT/deploy/space/"{Dockerfile,README.md,requirements.txt} "$OUT/"
+cp "$ROOT/deploy/space/"{app.py,Dockerfile,README.md,requirements.txt} "$OUT/"
 rsync -a --exclude '__pycache__' --exclude 'tests' "$ROOT/backend" "$OUT/"
 # Del módulo de entrenamiento solo hace falta el código que importa el backend
 cp "$ROOT/training/"{__init__.py,boat_env.py,problems.py,paths.py} "$OUT/training/"
