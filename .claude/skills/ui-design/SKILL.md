@@ -144,6 +144,14 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
   `--vermilion`, el resto en tinta al 35 %. Rayos como abanico en miniatura.
 - Números siempre con unidad y formato español: "67 pasos", "95 %", "+163,3".
 
+### Tablas de datos
+- Textos de longitud variable (nombres de modelos, que pueden ser muy largos) **fuera de las celdas**: en una
+  leyenda encima que hace salto de línea (`[overflow-wrap:anywhere]`). Cabeceras de columna cortas (A / B).
+- `table-fixed` con anchos por `<colgroup>`: el contenido nunca ensancha la tabla ni pisa a sus vecinas.
+- Si dos bloques van en paralelo dentro de un widget, decide las columnas con **container queries**
+  (`@container` + `@3xl:grid-cols-2`) según el ancho del widget, no con breakpoints de la ventana.
+- Comprobar siempre con los datos más largos reales (p. ej. modelos con sensores) y midiendo desbordes.
+
 ## 8. Estados (todo componente con datos los tiene)
 
 | Estado | Diseño |
