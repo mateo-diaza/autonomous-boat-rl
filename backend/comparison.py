@@ -72,19 +72,20 @@ def reset_same_scenario(lanes: list[Lane], seed: int, options: dict | None = Non
 
 
 def run_tournament(
-    models: list[tuple[BaseAlgorithm | None, bool]],
+    models: list[tuple[BaseAlgorithm | None, bool, dict]],
     env_kwargs: dict,
     episodes: int,
     seed: int,
 ) -> list[LaneScore]:
     """Simula `episodes` escenarios sin animación (síncrono: llamar con asyncio.to_thread).
 
-    Usa sus propias lanes: no toca la regata en vivo. `models` = [(modelo o None, determinista)] por lane.
+    Usa sus propias lanes: no toca la regata en vivo.
+    `models` = [(modelo o None, determinista, sensores)] por lane.
     """
     lanes = [Lane(env_kwargs) for _ in models]
-    for lane, (model, deterministic) in zip(lanes, models, strict=True):
+    for lane, (model, deterministic, sensors) in zip(lanes, models, strict=True):
         if model is not None:
-            lane.set_model(model)
+            lane.set_model(model, sensors=sensors)
         lane.deterministic = deterministic
     keepers = [ScoreKeeper() for _ in lanes]
     for i in range(episodes):
@@ -139,15 +140,15 @@ class ComparisonSession:
     def env_kwargs(self) -> dict:
         """Parámetros actuales del entorno (problema + rocas), para el torneo."""
         env = self.lanes[LANE_IDS[0]].env
-        return {**get_problem(self.problem).env_kwargs, "n_obstacles": env.n_obstacles}
+        return {**get_problem(self.problem).env_kwargs, "n_obstacles": env.n_obstacles}  # sin sensores
 
     # -------------------------------------------------------------------- Modelo
-    def set_model(self, lane_id: LaneId, model: BaseAlgorithm, ref: ModelRef) -> None:
-        self.lanes[lane_id].set_model(model, ref)
+    def set_model(self, lane_id: LaneId, model: BaseAlgorithm, ref: ModelRef, sensors: dict | None = None) -> None:
+        self.lanes[lane_id].set_model(model, ref, sensors)
         self._dirty = True
 
-    def tournament_models(self) -> list[tuple[BaseAlgorithm | None, bool]]:
-        return [(lane.model, lane.deterministic) for lane in self.lanes.values()]
+    def tournament_models(self) -> list[tuple[BaseAlgorithm | None, bool, dict]]:
+        return [(lane.model, lane.deterministic, lane.sensors) for lane in self.lanes.values()]
 
     def tournament_refs(self) -> list[ModelRef | None]:
         return [lane.model_ref for lane in self.lanes.values()]

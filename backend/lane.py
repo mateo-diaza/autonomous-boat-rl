@@ -1,6 +1,11 @@
 """Un barco con su "cerebro": un BoatEnv + (opcionalmente) un modelo SB3.
 
 Pieza común de la navegación en vivo (una lane) y de la comparativa (dos lanes en el mismo escenario).
+
+El entorno combina dos cosas que vienen de sitios distintos:
+- el MAR (problema: rocas, corriente, recompensa), que elige la sesión;
+- los SENSORES (qué observa el barco), que vienen del modelo cargado: un modelo solo funciona con la
+  forma de observación con la que se entrenó.
 """
 
 from __future__ import annotations
@@ -16,8 +21,10 @@ STRAIGHT = 1  # acción sin modelo: seguir recto
 
 
 class Lane:
-    def __init__(self, env_kwargs: dict):
-        self.env = BoatEnv(**env_kwargs)
+    def __init__(self, sea_kwargs: dict):
+        self.sea_kwargs = dict(sea_kwargs)
+        self.sensors: dict = {}
+        self.env = BoatEnv(**self.sea_kwargs)
         self.model: BaseAlgorithm | None = None
         self.model_ref: ModelRef | None = None
         self.deterministic = True
@@ -25,22 +32,29 @@ class Lane:
         self.action: int | None = None
         self.action_probs: list[float] | None = None
         self._initial: dict = {}
+        self._seed: int | None = None
 
-    def reconfigure(self, env_kwargs: dict) -> None:
-        """Cambia las condiciones del mar (otro problema) conservando el modelo. Requiere un reset después."""
-        self.env = BoatEnv(**env_kwargs)
+    def reconfigure(self, sea_kwargs: dict) -> None:
+        """Cambia el mar (otro problema) conservando modelo y sensores. Requiere un reset después."""
+        self.sea_kwargs = dict(sea_kwargs)
+        self.env = BoatEnv(**self.sea_kwargs, **self.sensors)
         self.obs, self.action = None, None
         self._refresh_probs()
 
     # ----------------------------------------------------------------- Escenario
     def reset(self, seed: int, options: dict | None = None) -> None:
+        self._seed = seed
         self.obs, _ = self.env.reset(seed=seed, options=options)
-        self._initial = {"start": self.env.pos.tolist(), "heading": self.env.heading}
+        self._initial = {
+            "start": self.env.pos.tolist(),
+            "heading": self.env.heading,
+            "current": self.env.current.tolist(),
+        }
         self.action = None
         self._refresh_probs()
 
     def scenario(self) -> dict:
-        """Escenario actual como `options` de reset: salida y rumbo iniciales + meta y obstáculos actuales."""
+        """Escenario actual como `options` de reset: salida, rumbo y corriente iniciales + meta y obstáculos."""
         return {**self._initial, "goal": self.env.goal.tolist(), "obstacles": self.obstacles()}
 
     def obstacles(self) -> list[list[float]]:
@@ -57,13 +71,35 @@ class Lane:
         return self.env.last_event is not None
 
     # -------------------------------------------------------------------- Modelo
-    def set_model(self, model: BaseAlgorithm, ref: ModelRef | None = None) -> None:
+    def set_model(self, model: BaseAlgorithm, ref: ModelRef | None = None, sensors: dict | None = None) -> None:
+        """Carga un modelo con los sensores con los que se entrenó (p. ej. {"observe_current": True}).
+
+        Si los sensores cambian, se reconstruye el entorno y se restaura el mismo escenario desde la salida.
+        Lanza ValueError si el modelo no encaja con la observación (no debería pasar si `sensors` es correcto).
+        """
+        self._set_sensors(sensors or {})
+        expected, got = model.observation_space.shape, self.env.observation_space.shape
+        if expected != got:
+            raise ValueError(f"El modelo espera observaciones de forma {expected} y el entorno da {got}.")
         self.model, self.model_ref = model, ref
         self._refresh_probs()
 
     def unload_model(self) -> None:
         self.model, self.model_ref = None, None
+        self._set_sensors({})
         self._refresh_probs()
+
+    def _set_sensors(self, sensors: dict) -> None:
+        if sensors == self.sensors:
+            return
+        had_scenario = self.obs is not None and self._seed is not None
+        scenario = self.scenario() if had_scenario else None
+        self.sensors = dict(sensors)
+        self.env = BoatEnv(**self.sea_kwargs, **self.sensors)
+        if had_scenario:
+            self.reset(self._seed, scenario)
+        else:
+            self.obs, self.action = None, None
 
     # ---------------------------------------------------------------------- Paso
     def step(self) -> EpisodeEndMsg | None:

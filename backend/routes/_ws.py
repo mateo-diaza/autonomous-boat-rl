@@ -15,6 +15,7 @@ from backend.models_cache import load_model
 from backend.runs import checkpoint_path, read_config
 from backend.schemas import ModelRef, WorldInfo
 from training.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
+from training.problems import run_env_kwargs, sensor_kwargs, sensor_names
 
 WORLD = WorldInfo(
     size=WORLD_SIZE, ray_range=RAY_RANGE, n_rays=N_RAYS, dt=DT, max_steps=MAX_STEPS,
@@ -63,12 +64,19 @@ async def run_loop(conn: Connection, session: TickingSession) -> None:
         await asyncio.sleep(delay)
 
 
-async def load_checkpoint(models_dir: Path, run_id: str, checkpoint_id: str) -> tuple[BaseAlgorithm, ModelRef]:
-    """Valida la ruta y carga el modelo fuera del event loop (tarda ~100 ms)."""
+async def load_checkpoint(
+    models_dir: Path, run_id: str, checkpoint_id: str
+) -> tuple[BaseAlgorithm, ModelRef, dict]:
+    """Valida la ruta y carga el modelo fuera del event loop (tarda ~100 ms).
+
+    Devuelve también los sensores con los que se entrenó (el barco debe navegar con ellos).
+    """
     path = checkpoint_path(models_dir, run_id, checkpoint_id)
-    algo = read_config(models_dir, run_id)["algo"]
-    model = await asyncio.to_thread(load_model, path, algo)
-    return model, ModelRef(run_id=run_id, checkpoint_id=checkpoint_id, algo=algo)
+    config = read_config(models_dir, run_id)
+    sensors = sensor_kwargs(run_env_kwargs(config))
+    model = await asyncio.to_thread(load_model, path, config["algo"])
+    ref = ModelRef(run_id=run_id, checkpoint_id=checkpoint_id, algo=config["algo"], sensors=sensor_names(sensors))
+    return model, ref, sensors
 
 
 def first_error(e: ValidationError) -> str:

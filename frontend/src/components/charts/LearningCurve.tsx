@@ -79,7 +79,7 @@ function CurveBody({ detail, checkpointId, onSelectCheckpoint }: LearningCurvePr
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <p className="text-sm">{summary}</p>
       <div
-        className="min-h-28 flex-1 cursor-pointer"
+        className="min-h-24 flex-1 cursor-pointer"
         role="img"
         aria-label={`Curva de aprendizaje. ${summary}`}
         onClick={handleClick}

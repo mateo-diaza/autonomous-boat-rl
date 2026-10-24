@@ -72,8 +72,8 @@ class SimulationSession:
         self._dirty = True
 
     # -------------------------------------------------------------------- Modelo
-    def set_model(self, model: BaseAlgorithm, ref: ModelRef) -> None:
-        self.lane.set_model(model, ref)
+    def set_model(self, model: BaseAlgorithm, ref: ModelRef, sensors: dict | None = None) -> None:
+        self.lane.set_model(model, ref, sensors)
         self._dirty = True
 
     def unload_model(self) -> None:

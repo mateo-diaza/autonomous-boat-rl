@@ -3,6 +3,7 @@
 import { useRef, type PointerEvent } from "react";
 
 import { ChartCanvas, type SceneContent } from "@/components/simulation/ChartCanvas";
+import { CurrentBadge } from "@/components/simulation/CurrentBadge";
 import { Flash } from "@/components/simulation/Flash";
 import type { Connection, EpisodeLogEntry } from "@/hooks/useSimulation";
 import { relativeRays, type DragPreview } from "@/lib/draw/chart";
@@ -46,6 +47,7 @@ export function SimStage(props: SimStageProps) {
       obstacles: state?.obstacles ?? [],
       rays: state ? relativeRays(state.rays, state.boat.heading) : [],
       raysBoat: boat,
+      current: state?.current ?? null,
       showRays,
       drag: dragRef.current,
     };
@@ -121,7 +123,10 @@ export function SimStage(props: SimStageProps) {
             <span className="rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
               Paso {sim.step} · Retorno {formatReturn(sim.episode_return)}
             </span>
-            <span className="rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">{modelLabel}</span>
+            <span className="flex flex-col items-end gap-1.5">
+              <span className="rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">{modelLabel}</span>
+              <CurrentBadge current={sim.current} />
+            </span>
           </div>
         )}
         {lastEpisode && outcome && (

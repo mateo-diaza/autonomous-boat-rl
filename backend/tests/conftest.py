@@ -12,6 +12,7 @@ from backend.main import app
 from training.boat_env import BoatEnv
 
 RUN = "ppo_test"
+SENSOR_RUN = "ppo_sensor_test"   # entrenado con sensor de corriente (observación de 19 dimensiones)
 
 
 @pytest.fixture(scope="module")
@@ -28,6 +29,13 @@ def models_dir(tmp_path_factory):
     model.save(run / "final")
     np.savez(run / "eval" / "evaluations.npz", timesteps=np.array([500, 1000]),
              results=np.array([[1.0, 3.0], [5.0, 7.0]]), successes=np.array([[0, 0], [1, 0]]))
+    sensor_run = root / SENSOR_RUN
+    sensor_run.mkdir()
+    (sensor_run / "config.json").write_text(json.dumps({
+        "algo": "ppo", "problem": "current", "obstacles": "4-10", "steps": 64, "seed": 0,
+        "env_kwargs": {"n_obstacles": [4, 10], "current_speed": [5.0, 8.0], "observe_current": True},
+    }))
+    PPO("MlpPolicy", BoatEnv(observe_current=True), n_steps=64, batch_size=64, seed=0).save(sensor_run / "final")
     (root / "sin_config").mkdir()  # carpeta ajena: debe ignorarse
     return root
 

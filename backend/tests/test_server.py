@@ -17,7 +17,7 @@ from backend.schemas import (
     StepCmd,
 )
 from backend.simulation import SimulationSession
-from backend.tests.conftest import RUN
+from backend.tests.conftest import RUN, SENSOR_RUN
 
 
 # --------------------------------------------------------------------------- REST
@@ -26,9 +26,9 @@ def test_health(client):
 
 
 def test_list_runs(client):
-    runs = client.get("/api/runs").json()
-    assert [r["id"] for r in runs] == [RUN]
-    assert runs[0]["n_checkpoints"] == 3 and runs[0]["best_success_rate"] == 0.5
+    runs = {r["id"]: r for r in client.get("/api/runs").json()}
+    assert set(runs) == {RUN, SENSOR_RUN}  # "sin_config" se ignora
+    assert runs[RUN]["n_checkpoints"] == 3 and runs[RUN]["best_success_rate"] == 0.5
 
 
 def test_run_detail(client):
@@ -146,7 +146,8 @@ def test_problems_catalog(client):
 
 
 def test_runs_report_their_problem_with_fallback_for_old_configs(client):
-    assert client.get("/api/runs").json()[0]["problem"] == "base"  # config sin "problem" -> base
+    runs = {r["id"]: r for r in client.get("/api/runs").json()}
+    assert runs[RUN]["problem"] == "base" and runs[RUN]["sensors"] == []  # config sin "problem" -> base
 
 
 def test_set_problem_keeps_model_and_changes_env(models_dir):
@@ -165,3 +166,35 @@ def test_ws_unknown_problem_returns_error(client):
         ws.send_json({"type": "set_problem", "problem": "huracan"})
         err = ws.receive_json()
         assert err["type"] == "error" and "Problema desconocido" in err["message"]
+
+
+# ------------------------------------------------------------------- Sensores
+def test_sensor_model_rebuilds_env_with_its_sensors_and_keeps_scenario(models_dir):
+    s = SimulationSession(seed=4)
+    s.apply(SetProblemCmd(type="set_problem", problem="current"))
+    before = s.state_msg().sim
+    model = load_model(models_dir / SENSOR_RUN / "final.zip", "ppo")
+    s.set_model(model, ModelRef(run_id=SENSOR_RUN, checkpoint_id="final", algo="ppo", sensors=["current"]),
+                {"observe_current": True})
+    assert s.lane.env.observation_space.shape == (19,)
+    after = s.state_msg().sim
+    assert after.obstacles == before.obstacles and after.current == before.current and after.boat == before.boat
+    s.unload_model()
+    assert s.lane.env.observation_space.shape == (17,)
+
+
+def test_model_with_wrong_sensors_is_rejected(models_dir):
+    s = SimulationSession(seed=0)
+    model = load_model(models_dir / SENSOR_RUN / "final.zip", "ppo")
+    with pytest.raises(ValueError, match="observaciones"):
+        s.set_model(model, ModelRef(run_id=SENSOR_RUN, checkpoint_id="final", algo="ppo"), sensors={})
+
+
+def test_ws_loads_sensor_model_from_its_config(client):
+    runs = {r["id"]: r for r in client.get("/api/runs").json()}
+    assert runs[SENSOR_RUN]["sensors"] == ["current"] and runs[SENSOR_RUN]["problem"] == "current"
+    with client.websocket_connect("/ws/sim") as ws:
+        ws.receive_json(), ws.receive_json()
+        ws.send_json({"type": "load_model", "run_id": SENSOR_RUN, "checkpoint_id": "final"})
+        state = ws.receive_json()
+        assert state["status"]["model"]["sensors"] == ["current"] and len(state["sim"]["action_probs"]) == 3

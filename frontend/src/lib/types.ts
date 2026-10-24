@@ -28,6 +28,7 @@ export type RunSummary = {
   algo: Algo;
   /** En qué problema (condiciones del mar) se entrenó. */
   problem: string;
+  sensors: SensorId[];
   obstacles: string;
   total_steps: number;
   n_checkpoints: number;
@@ -62,9 +63,14 @@ export type Boat = {
 
 export type Circle = { x: number; y: number; radius: number };
 
+export type Vector = { x: number; y: number };
+
+/** Sensores extra con los que se entrenó un modelo. */
+export type SensorId = "current";
+
 export type Ray = { angle: number; distance: number };
 
-export type ModelRef = { run_id: string; checkpoint_id: string; algo: Algo };
+export type ModelRef = { run_id: string; checkpoint_id: string; algo: Algo; sensors: SensorId[] };
 
 export type SimState = {
   step: number;
@@ -73,6 +79,8 @@ export type SimState = {
   boat: Boat;
   goal: Circle;
   obstacles: Circle[];
+  /** Corriente del episodio en u/s; (0, 0) si no hay. */
+  current: Vector;
   rays: Ray[];
   action: Action | null;
   /** PPO: probabilidades; DQN: softmax de los Q-values. */

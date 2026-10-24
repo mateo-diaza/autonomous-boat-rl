@@ -1,7 +1,12 @@
 """Catálogo de problemas: variantes de dificultad del entorno, cada una con la lección de RL que ilustra.
 
-Un problema = parámetros de BoatEnv + textos para la web. Añadir una dificultad = añadir una entrada aquí
-(y, si hace falta, el parámetro correspondiente en BoatEnv con un valor por defecto que no cambie el base).
+Un problema = parámetros de BoatEnv que definen el MAR (dinámica, recompensa) + textos para la web.
+Añadir una dificultad = añadir una entrada aquí (y, si hace falta, el parámetro correspondiente en BoatEnv
+con un valor por defecto que no cambie el base).
+
+Los SENSORES (qué observa el barco) no son parte del mar sino del modelo: se eligen al entrenar
+(p. ej. `--observe-current`) y se guardan en su config.json. Así un mismo mar sirve para modelos con
+sensores distintos, y cada modelo navega siempre con los sensores con los que aprendió.
 """
 
 from __future__ import annotations
@@ -12,12 +17,17 @@ from training.boat_env import BoatEnv
 
 DEFAULT_PROBLEM = "base"
 
+#: Parámetros de BoatEnv que cambian la observación (y por tanto la red): son del modelo, no del mar
+SENSOR_KEYS = ("observe_current",)
+SENSOR_NAMES = {"observe_current": "current"}
+
 
 @dataclass(frozen=True)
 class Problem:
     id: str
     title: str
-    #: Qué cambia y qué dificultad de RL ilustra, en lenguaje llano (se muestra en la web)
+    #: Qué cambia y qué dificultad de RL ilustra, en lenguaje llano. Se muestra en la barra de la web:
+    #: máximo ~130 caracteres (2 líneas), o la columna derecha deja de caber a 1920x1080
     description: str
     env_kwargs: dict = field(default_factory=dict)
 
@@ -39,11 +49,19 @@ PROBLEMS: dict[str, Problem] = {
             id="sparse",
             title="Recompensa escasa",
             description=(
-                "Mismo mar, pero el agente solo recibe +100 al llegar y −100 al chocar: ninguna pista intermedia. "
-                "Ilustra el problema de la exploración: solo aprende de las veces que llega por casualidad, "
-                "así que tarda más y avanza a trompicones."
+                "Solo +100 al llegar y −100 al chocar, sin pistas intermedias. Problema de exploración: "
+                "aprende de las veces que acierta por casualidad, tarde y a trompicones."
             ),
             env_kwargs={**_BASE_ENV, "reward_mode": "sparse"},
+        ),
+        Problem(
+            id="current",
+            title="Corrientes",
+            description=(
+                "Corriente aleatoria de 5–8 u/s (más de media velocidad del barco). Sin sensor no la ve "
+                "y debe deducirla de la deriva: observabilidad parcial."
+            ),
+            env_kwargs={**_BASE_ENV, "current_speed": (5.0, 8.0)},
         ),
     ]
 }
@@ -74,3 +92,13 @@ def run_env_kwargs(config: dict) -> dict:
     raw = str(config.get("obstacles", "4-10"))
     lo, _, hi = raw.partition("-")
     return {"n_obstacles": (int(lo), int(hi)) if hi else int(lo)}
+
+
+def sensor_kwargs(env_kwargs: dict) -> dict:
+    """Solo los parámetros de sensores activos de un run (p. ej. {"observe_current": True})."""
+    return {key: env_kwargs[key] for key in SENSOR_KEYS if env_kwargs.get(key)}
+
+
+def sensor_names(sensors: dict) -> list[str]:
+    """{"observe_current": True} -> ["current"] (identificadores estables para la API)."""
+    return [SENSOR_NAMES[key] for key in SENSOR_KEYS if sensors.get(key)]

@@ -133,3 +133,32 @@ def test_run_env_kwargs_supports_old_and_new_configs():
     assert run_env_kwargs({"obstacles": "6"}) == {"n_obstacles": 6}
     new = {"env_kwargs": {"n_obstacles": [4, 10], "reward_mode": "sparse"}}
     assert run_env_kwargs(new) == {"n_obstacles": (4, 10), "reward_mode": "sparse"}
+
+
+def test_calm_sea_has_no_current():
+    env = BoatEnv(n_obstacles=0)
+    env.reset(seed=0)
+    assert env.current.tolist() == [0.0, 0.0] and env.get_state()["current"] == {"x": 0.0, "y": 0.0}
+
+
+def test_current_drifts_the_boat():
+    env = BoatEnv(n_obstacles=0)
+    env.reset(seed=0, options={"start": [50, 50], "goal": [90, 90], "heading": 0.0, "current": [0.0, 5.0]})
+    env.step(1)  # recto hacia +x; la corriente empuja hacia +y
+    assert env.pos[1] == pytest.approx(50.5) and env.pos[0] > 50
+
+
+def test_random_current_respects_range_and_is_reproducible():
+    a, b = BoatEnv(current_speed=(5.0, 8.0)), BoatEnv(current_speed=(5.0, 8.0))
+    a.reset(seed=3), b.reset(seed=3)
+    assert 5.0 <= np.linalg.norm(a.current) <= 8.0
+    np.testing.assert_array_equal(a.current, b.current)
+
+
+def test_current_sensor_reports_drift_in_boat_frame():
+    env = BoatEnv(n_obstacles=0, observe_current=True)
+    assert env.observation_space.shape == (19,)
+    # Rumbo +x y corriente hacia +y (estribor, con el eje y hacia abajo): todo de costado, nada a favor
+    obs, _ = env.reset(seed=0, options={"start": [50, 50], "heading": 0.0, "current": [0.0, 8.0]})
+    assert obs[-2] == pytest.approx(0.0, abs=1e-6) and obs[-1] == pytest.approx(0.8)
+    assert np.all(np.abs(obs) <= 1.0)

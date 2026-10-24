@@ -89,6 +89,8 @@ def main():
     parser.add_argument("--steps", type=int, default=None, help="por defecto: 30k (ppo) / 50k (dqn)")
     parser.add_argument("--problem", choices=list(PROBLEMS), default=DEFAULT_PROBLEM,
                         help="variante de dificultad del entorno (ver training/problems.py)")
+    parser.add_argument("--observe-current", action="store_true",
+                        help="sensor de corriente: el agente observa la corriente (+2 dimensiones)")
     parser.add_argument("--obstacles", default=None,
                         help="sobrescribe las rocas del problema: '6' fijo o '4-10' aleatorio por episodio")
     parser.add_argument("--n-envs", type=int, default=None, help="por defecto: 4")
@@ -113,6 +115,8 @@ def main():
     env_kwargs = dict(get_problem(args.problem).env_kwargs)
     if args.obstacles:
         env_kwargs["n_obstacles"] = parse_obstacles(args.obstacles)
+    if args.observe_current:
+        env_kwargs["observe_current"] = True
     run = args.run or f"{args.algo}_{time.strftime('%Y%m%d_%H%M%S')}"
     run_dir = MODELS_DIR / run
     run_dir.mkdir(parents=True, exist_ok=True)

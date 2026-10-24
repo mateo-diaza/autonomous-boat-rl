@@ -45,8 +45,8 @@ def test_race_ends_when_both_lanes_finish_and_counts_once(models_dir):
 def test_tournament_is_reproducible(models_dir):
     model = load_model(models_dir / RUN / "final.zip", "ppo")
     env_kwargs = {"n_obstacles": (4, 10)}
-    first = run_tournament([(model, True), (None, True)], env_kwargs, episodes=3, seed=42)
-    again = run_tournament([(model, True), (None, True)], env_kwargs, episodes=3, seed=42)
+    first = run_tournament([(model, True, {}), (None, True, {})], env_kwargs, episodes=3, seed=42)
+    again = run_tournament([(model, True, {}), (None, True, {})], env_kwargs, episodes=3, seed=42)
     assert first == again and first[0].episodes == first[1].episodes == 3
 
 

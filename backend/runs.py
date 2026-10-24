@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from backend.schemas import CheckpointInfo, CurvePoint, RunDetail, RunSummary
-from training.problems import DEFAULT_PROBLEM
+from training.problems import DEFAULT_PROBLEM, run_env_kwargs, sensor_kwargs, sensor_names
 
 _STEPS_RE = re.compile(r"_(\d+)_steps\.zip$")
 _RUN_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -86,6 +86,7 @@ def _summary(run_dir: Path, checkpoints: list[CheckpointInfo], curve: list[Curve
         id=run_dir.name,
         algo=config["algo"],
         problem=config.get("problem", DEFAULT_PROBLEM),  # runs antiguos: anteriores al catálogo
+        sensors=sensor_names(sensor_kwargs(run_env_kwargs(config))),
         obstacles=str(config["obstacles"]),
         total_steps=int(config["steps"]),
         n_checkpoints=len(checkpoints),

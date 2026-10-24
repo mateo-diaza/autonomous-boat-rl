@@ -5,7 +5,7 @@
 
 import type { ChartTheme } from "@/lib/draw/theme";
 import type { Point } from "@/lib/sim/frameStore";
-import type { Boat, Circle, Ray, WorldInfo } from "@/lib/types";
+import type { Boat, Circle, Ray, Vector, WorldInfo } from "@/lib/types";
 
 const GRID_STEP = 10;
 const NEAR_RAY_FRACTION = 0.4;
@@ -27,6 +27,8 @@ export type ChartScene = {
   /** Rayos con ángulo RELATIVO al rumbo de `raysBoat` (ver relativeRays). */
   rays: Ray[];
   raysBoat: Boat | null;
+  /** Corriente del episodio (u/s); null o (0, 0) = sin corriente. */
+  current: Vector | null;
   showRays: boolean;
   drag: DragPreview | null;
   time: number;
@@ -47,6 +49,7 @@ export function drawChart(
   ctx.lineCap = "round";
 
   drawWater(ctx, scene.world.size, px, theme);
+  if (scene.current) drawCurrent(ctx, scene.current, scene.world.size, px, theme);
   drawCompass(ctx, scene.world.size, px, theme);
   for (const layer of scene.boats) drawTrail(ctx, layer.trail, px, toneColor(layer.tone, theme));
   if (scene.goal) drawGoal(ctx, withDrag(scene.goal, scene.drag, "goal"), px, theme, scene);
@@ -90,6 +93,42 @@ function drawWater(ctx: CanvasRenderingContext2D, size: number, px: number, them
     ctx.fillText(String(v), 3 * px, v + 3 * px);
   }
   ctx.globalAlpha = 1;
+}
+
+const CURRENT_GRID = 20;
+const MAX_ARROW = 7; // unidades del mundo para la corriente más fuerte (~8 u/s)
+
+/** Flechas tenues sobre el agua en la dirección de la corriente; su largo indica la fuerza. */
+function drawCurrent(ctx: CanvasRenderingContext2D, current: Vector, size: number, px: number, theme: ChartTheme) {
+  const speed = Math.hypot(current.x, current.y);
+  if (speed < 1e-6) return;
+  const ux = current.x / speed;
+  const uy = current.y / speed;
+  const length = Math.min(speed, 8) / 8 * MAX_ARROW;
+  const head = 1.6;
+  ctx.save();
+  ctx.strokeStyle = theme.boatB;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 1.5 * px;
+  ctx.beginPath();
+  for (let gx = CURRENT_GRID / 2; gx < size; gx += CURRENT_GRID) {
+    for (let gy = CURRENT_GRID / 2; gy < size; gy += CURRENT_GRID) {
+      const x0 = gx - (ux * length) / 2;
+      const y0 = gy - (uy * length) / 2;
+      const x1 = x0 + ux * length;
+      const y1 = y0 + uy * length;
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      // Punta: dos trazos a ±150° de la dirección
+      for (const side of [-1, 1]) {
+        const angle = Math.atan2(uy, ux) + side * (5 * Math.PI) / 6;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + Math.cos(angle) * head, y1 + Math.sin(angle) * head);
+      }
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawCompass(ctx: CanvasRenderingContext2D, size: number, px: number, theme: ChartTheme) {

@@ -86,6 +86,7 @@ export function ModelPicker(props: ModelPickerProps) {
             {selectedRun && (
               <p className="text-xs text-muted-foreground">
                 Entrenado en: <span className="text-foreground">{problemTitle(props.problems ?? [], selectedRun.problem)}</span>
+                {selectedRun.sensors.includes("current") && " · con sensor de corriente"}
               </p>
             )}
           </div>

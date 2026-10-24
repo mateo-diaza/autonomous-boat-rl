@@ -2,6 +2,7 @@
 
 import { LANE_STYLE, type RaysTarget } from "@/components/compare/lanes";
 import { ChartCanvas, type SceneContent } from "@/components/simulation/ChartCanvas";
+import { CurrentBadge } from "@/components/simulation/CurrentBadge";
 import { Flash } from "@/components/simulation/Flash";
 import type { RaceLogEntry } from "@/hooks/useComparison";
 import type { Connection } from "@/hooks/useServerSocket";
@@ -39,6 +40,7 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
       obstacles: shared?.obstacles ?? [],
       rays: raysLane?.current ? relativeRays(raysLane.current.rays, raysLane.current.boat.heading) : [],
       raysBoat,
+      current: shared?.current ?? null,
       showRays: rays !== "none",
       drag: null,
     };
@@ -52,6 +54,11 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
   return (
     <div className={cn("widget flex flex-col justify-center p-2 sm:p-3", className)}>
       <ChartCanvas world={world} connection={connection} buildScene={buildScene} ariaLabel={description}>
+        {lanes[0] && (
+          <div className="pointer-events-none absolute top-3 right-3 font-mono text-sm tabular-nums">
+            <CurrentBadge current={lanes[0].sim.current} />
+          </div>
+        )}
         <ul className="pointer-events-none absolute inset-x-3 top-3 flex flex-col items-start gap-1.5 font-mono text-sm tabular-nums">
           {lanes.map((lane) => (
             <li key={lane.id} className="flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">

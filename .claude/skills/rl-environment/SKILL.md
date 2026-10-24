@@ -47,6 +47,12 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
    }
    ```
    `title`/`description` en español: los muestra el frontend (lenguaje llano + qué dificultad de RL ilustra).
+   La descripción, ≤ ~130 caracteres (2 líneas en la barra de controles).
+   Los parámetros que cambian la OBSERVACIÓN (sensores, p. ej. `observe_current`) no van en el problema sino en
+   el modelo: se eligen al entrenar (`--observe-current`), se guardan en su config.json y el backend reconstruye
+   el entorno del barco con ellos al cargarlo (`SENSOR_KEYS` en problems.py, `Lane._set_sensors`).
+   Un parámetro nuevo de BoatEnv con valor por defecto "apagado" NO debe consumir azar ni cambiar el orden de las
+   operaciones: el mar en calma debe reproducir bit a bit los escenarios de siempre (verificar con una foto).
 4. `train.py --problem <id>` usa `PROBLEMS[id].env_kwargs` y lo guarda en `config.json`.
 5. Si la variante necesita información para ser Markov (velocidad de obstáculos, corriente), decide
    explícitamente si se observa o no — y documéntalo: es justo la lección de RL de esa variante.

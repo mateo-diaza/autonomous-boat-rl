@@ -19,6 +19,7 @@ RunId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]+$", max_length=100)]
 ProblemId = Annotated[str, Field(pattern=r"^[a-z_]+$", max_length=40)]
 CheckpointId = Annotated[str, Field(pattern=r"^(\d+|final|best)$")]
 Event = Literal["goal", "crash", "timeout"]
+SensorId = Literal["current"]
 
 
 # ------------------------------------------------------------------------- REST
@@ -44,6 +45,7 @@ class RunSummary(BaseModel):
     id: RunId
     algo: Literal["dqn", "ppo"]
     problem: ProblemId          # en qué problema se entrenó
+    sensors: list[SensorId]     # sensores extra con los que se entrenó
     obstacles: str
     total_steps: int
     n_checkpoints: int
@@ -82,6 +84,11 @@ class Circle(BaseModel):
     radius: float
 
 
+class Vector(BaseModel):
+    x: float
+    y: float
+
+
 class Ray(BaseModel):
     angle: float
     distance: float
@@ -91,6 +98,7 @@ class ModelRef(BaseModel):
     run_id: RunId
     checkpoint_id: CheckpointId
     algo: Literal["dqn", "ppo"]
+    sensors: list[SensorId] = []   # sensores extra con los que se entrenó (p. ej. "current")
 
 
 class SimState(BaseModel):
@@ -100,6 +108,7 @@ class SimState(BaseModel):
     boat: Boat
     goal: Circle
     obstacles: list[Circle]
+    current: Vector                    # corriente del episodio (u/s); (0, 0) si no hay
     rays: list[Ray]
     action: int | None                 # 0 izq / 1 recto / 2 der; None si aún no ha actuado
     action_probs: list[float] | None   # PPO: probabilidades; DQN: softmax de los Q-values

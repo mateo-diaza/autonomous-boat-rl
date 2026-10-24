@@ -55,5 +55,6 @@ export function checkpointLabel(checkpointId: string): string {
 /** "PPO · ppo · 25k pasos" para un modelo cargado, o "Sin modelo". */
 export function describeModel(ref: ModelRef | null): string {
   if (!ref) return "Sin modelo (recto)";
-  return `${ref.algo.toUpperCase()} · ${ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}`;
+  const sensors = ref.sensors.includes("current") ? " · sensor de corriente" : "";
+  return `${ref.algo.toUpperCase()} · ${ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}${sensors}`;
 }
