@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Barquito con la paleta "Carta náutica": papel, tinta, bermellón y agua -->
+  <rect width="64" height="64" rx="14" fill="#f4ecd8"/>
+  <path d="M8 49c5 0 5-3 10-3s5 3 10 3 5-3 10-3 5 3 10 3 5-3 10-3" fill="none" stroke="#2f5d8a" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M31 9v29" stroke="#1d2b45" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M34 12l15 24H34z" fill="#fbf6e9" stroke="#1d2b45" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M28 17L16 34h12z" fill="#fbf6e9" stroke="#1d2b45" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M10 39h44l-6 8H16z" fill="#b3412e" stroke="#1d2b45" stroke-width="3" stroke-linejoin="round"/>
+</svg>
