@@ -1,4 +1,4 @@
-# Solo lo que necesita el backend en producción (sin pygame ni tensorboard).
+# Solo lo que necesita el backend desplegado (sin pygame ni tensorboard).
 # Versiones fijadas a las del entorno donde se entrenaron los modelos.
 # PyTorch solo CPU desde su índice (~200 MB en vez de ~2 GB con CUDA); el resto, de PyPI.
 --extra-index-url https://download.pytorch.org/whl/cpu

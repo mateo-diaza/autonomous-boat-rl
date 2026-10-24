@@ -1,0 +1,14 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: bitacora-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: CORS_ORIGINS        # dominio de la web en Vercel; se pide al crear el servicio
+        sync: false

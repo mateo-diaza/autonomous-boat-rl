@@ -19,5 +19,5 @@ frontend/next-env.d.ts
 .pytest_cache/
 .ruff_cache/
 
-# Despliegue (generado por deploy/build_space.sh)
-deploy/space/build/
+# Despliegue (generado por deploy/build_server.sh)
+deploy/server/build/

@@ -21,7 +21,7 @@ autonomous-boat-rl/
 │   ├── routes/          #   REST de runs, /ws/sim (navegación), /ws/compare (comparativa)
 │   └── tests/
 ├── frontend/            # Web Next.js (TypeScript)
-├── deploy/              # Despliegue: backend en Hugging Face Spaces, frontend en Vercel
+├── deploy/              # Despliegue: demo en la wifi, backend en Render, frontend en Vercel
 ├── package.json         # arranque conjunto de la demo (pnpm dev)
 ├── requirements.txt     # dependencias Python de todo el repo (incluye training/ y backend/)
 └── pyproject.toml       # configuración de ruff y pytest
@@ -90,7 +90,11 @@ tensorboard --logdir training/logs
 
 ## Despliegue
 
-Backend en Hugging Face Spaces (SDK Gradio, gratis) y frontend en Vercel: pasos en [deploy/README.md](deploy/README.md).
+```bash
+pnpm demo:lan   # demo en la wifi: imprime http://<ip-del-portátil>:3000 para el público
+```
+
+En internet: backend en Render y frontend en Vercel. Pasos en [deploy/README.md](deploy/README.md).
 
 ## Calidad
 

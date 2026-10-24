@@ -1,64 +1,83 @@
 # Despliegue
 
-- **Backend** (FastAPI + WebSockets + modelos) → [Hugging Face Spaces](https://huggingface.co/spaces) con el SDK
-  Gradio (el de Docker es de pago). Gratis, 2 CPU y 16 GB de RAM. No se usa Gradio: `app.py` arranca el backend.
-- **Frontend** (Next.js) → [Vercel](https://vercel.com).
+Dos formas de enseñar la app:
+
+- **Demo en la wifi** (recomendada para presentar): todo corre en el portátil y cualquiera en la misma
+  red abre `http://<ip-del-portátil>:3000`. Toda la CPU del portátil, sin cuentas ni esperas.
+- **En internet**: backend en [Render](https://render.com) (gratis, sin tarjeta) y frontend en
+  [Vercel](https://vercel.com).
+
+## Demo en la wifi
+
+```bash
+pnpm demo:lan
+```
+
+Compila la web, arranca backend y web escuchando en la red e imprime la URL (`http://192.168.x.x:3000`).
+Para antes `pnpm dev` (comparten puertos y `frontend/.next`). Si el portátil tiene varias redes, fuerza la IP
+con `LAN_IP=192.168.1.20 pnpm demo:lan`.
+
+- Sin `NEXT_PUBLIC_API_URL`, cada navegador busca el backend en la misma IP que la web (puerto 8000).
+- Si el cortafuegos está activo, abre los puertos 3000 y 8000 (`sudo ufw allow 3000,8000/tcp`).
+- Algunas wifis de eventos aíslan a los clientes entre sí: si nadie llega a la URL, comparte datos
+  desde el móvil y conecta el portátil y el público a esa red.
+
+## En internet
 
 El backend necesita un proceso siempre encendido (una simulación por visitante a 30 Hz, PyTorch y los
 modelos en disco), así que no cabe en plataformas serverless.
 
-## 1. Backend en Hugging Face Spaces
+### 1. Backend en Render
 
-1. Crea un Space **público** en <https://huggingface.co/new-space> con **SDK: Gradio** (plantilla *Blank*) y
-   hardware *CPU basic* (gratis). Su URL pública será `https://<usuario>-<space>.hf.space`.
-2. Empaqueta código y modelos:
+Los modelos no están en el repositorio principal, así que el backend se despliega desde un repositorio
+propio que genera `deploy/build_server.sh` (código + modelos, ~240 MB).
 
-   ```bash
-   deploy/build_space.sh
-   ```
-
-   Genera `deploy/space/build/` con `app.py`, el backend, el entorno y los modelos que ve la web
-   (sin `_archivo/` ni experimentos `exp_*`). La cabecera de `deploy/space/README.md` configura el Space.
-3. Súbelo (una vez: `pip install -U huggingface_hub` y `hf auth login` con un token de escritura):
+1. Empaqueta (la carpeta es un repo git con su propio historial; cada empaquetado se añade encima):
 
    ```bash
-   hf upload <usuario>/<space> deploy/space/build . --repo-type space
+   deploy/build_server.sh
+   cd deploy/server/build && git add -A && git commit -m "Actualiza el backend"
    ```
 
-   Los `.zip` de los modelos se suben como ficheros grandes automáticamente. El Space se construye solo
-   (unos minutos) y queda en *Running*.
-4. En **Settings → Variables and secrets** del Space añade la variable
-   `CORS_ORIGINS=https://<tu-app>.vercel.app` (varias separadas por comas, sin barra final).
-   Sin ella el backend rechaza las conexiones de la web.
-5. Comprueba `https://<usuario>-<space>.hf.space/api/health` → `{"status":"ok"}`.
+2. Crea un repositorio vacío en GitHub (por ejemplo `q-captain-api`; puede ser privado) y súbelo:
 
-Para actualizar modelos o código: repite los pasos 2 y 3.
+   ```bash
+   cd deploy/server/build
+   git remote add origin git@github.com:<usuario>/q-captain-api.git
+   git push -u origin main
+   ```
 
-## 2. Frontend en Vercel
+3. En Render: *New → Blueprint*, conecta ese repositorio y acepta. `render.yaml` crea el servicio web
+   gratuito (`pip install -r requirements.txt`, `python app.py`, Python 3.12).
+4. Cuando lo pida, rellena `CORS_ORIGINS=https://<tu-app>.vercel.app` (varias separadas por comas, sin barra
+   final). Si aún no tienes la URL de Vercel, ponla después en *Environment* y vuelve a desplegar.
+5. Comprueba `https://<servicio>.onrender.com/api/health` → `{"status":"ok"}`.
 
-1. *Add New → Project* e importa el repositorio de GitHub.
+Para actualizar: repite 1 y `git push` (Render redespliega solo).
+
+### 2. Frontend en Vercel
+
+1. *Add New → Project* e importa el repositorio principal de GitHub.
 2. **Root Directory**: `frontend` (Vercel detecta Next.js y pnpm).
-3. **Environment Variables**: `NEXT_PUBLIC_API_URL=https://<usuario>-<space>.hf.space`
+3. **Environment Variables**: `NEXT_PUBLIC_API_URL=https://<servicio>.onrender.com`
    (sin barra final; los WebSockets pasan solos a `wss://`).
 4. *Deploy*. Si cambias la variable después, vuelve a desplegar: se incrusta al compilar.
+
+### Límites del plan gratuito de Render
+
+- **0,1 CPU compartida y 512 MB**: la simulación va bien con 1-2 visitantes a la vez; los torneos tardan más.
+- **Se duerme a los 15 min sin uso** y tarda ~1 min en despertar: la web muestra "reintentando" hasta entonces.
+- **5 GB de tráfico al mes**: cada pestaña abierta recibe el estado a 30 Hz (~20 h de simulación vista).
 
 ## Probar el paquete en local
 
 ```bash
-deploy/build_space.sh
-cd deploy/space/build && ../../../.venv/bin/python app.py
+deploy/build_server.sh
+cd deploy/server/build && PORT=8000 ../../../.venv/bin/python app.py
 ```
 
-En plataformas con Docker (Railway, Fly.io, Spaces de pago) se usa el `Dockerfile` del paquete:
-`docker build -t bitacora-api deploy/space/build` y `docker run -p 7860:7860 -e CORS_ORIGINS=... bitacora-api`.
+Con Docker (Railway, Fly.io, Cloud Run...): `docker build -t q-captain-api deploy/server/build` y
+`docker run -p 8000:8000 -e CORS_ORIGINS=... q-captain-api`.
 
-Y el frontend apuntando a ella: `NEXT_PUBLIC_API_URL=http://localhost:7860 pnpm --dir frontend dev`.
-
-## A tener en cuenta
-
-- **Arranque en frío**: el Space gratuito se duerme tras 48 h sin visitas y tarda ~1 min en despertar.
-  Abre la web unos minutos antes de una demo.
-- **Capacidad**: cada pestaña abierta es una simulación en el servidor. Con 2 CPU van bien ~10-20 visitantes
-  a la vez; los torneos de la comparativa son lo que más CPU consume.
-- **Versiones**: `deploy/space/requirements.txt` fija las versiones con las que se entrenaron los modelos.
-  Si actualizas stable-baselines3 o PyTorch en local, actualízalas también ahí.
+`deploy/server/requirements.txt` fija las versiones con las que se entrenaron los modelos. Si actualizas
+stable-baselines3 o PyTorch en local, actualízalas también ahí.
