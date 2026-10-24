@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+models/*
+!models/.gitkeep
+logs/*
+!logs/.gitkeep
+*.mp4
+*.gif
+.DS_Store
+.idea/
+.vscode/
