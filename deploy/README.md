@@ -58,7 +58,8 @@ Para actualizar: repite 1 y `git push` (Render redespliega solo).
 ### 2. Frontend en Vercel
 
 1. *Add New → Project* e importa el repositorio principal de GitHub.
-2. **Root Directory**: `frontend` (Vercel detecta Next.js y pnpm).
+2. **Root Directory**: `frontend`. `frontend/vercel.json` fija los comandos con pnpm 12: Vercel no reconoce
+   el lockfile de pnpm 12 y usaría un pnpm antiguo que falla con `ERR_INVALID_THIS`.
 3. **Environment Variables**: `NEXT_PUBLIC_API_URL=https://<servicio>.onrender.com`
    (sin barra final; los WebSockets pasan solos a `wss://`).
 4. *Deploy*. Si cambias la variable después, vuelve a desplegar: se incrusta al compilar.
