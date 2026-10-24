@@ -3,3 +3,8 @@ stable-baselines3
 pygame
 tensorboard
 numpy
+fastapi
+uvicorn[standard]
+pytest
+httpx
+ruff

@@ -42,6 +42,10 @@ python -m scripts.replay models/ppo_demo --upto 25000 --max-steps 300 --stochast
 # Ver el agente final
 python -m scripts.replay models/dqn_baseline/best/best_model.zip --episodes 10
 
+# Tests y lint
+python -m pytest tests
+ruff check src scripts tests
+
 # Curvas de aprendizaje (rollout/success_rate, eval/mean_reward...)
 tensorboard --logdir logs
 ```

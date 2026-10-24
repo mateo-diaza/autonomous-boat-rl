@@ -38,10 +38,19 @@ MAX_STEPS = 1000
 OBSTACLE_RADIUS = (3.0, 8.0)
 MIN_START_GOAL_DIST = 50.0
 SPAWN_MARGIN = 10.0
+EDIT_RADIUS_LIMITS = (1.0, 15.0)   # radios permitidos al editar obstáculos desde fuera
 
 # --- Render ------------------------------------------------------------------
 RENDER_SCALE = 7         # píxeles por unidad -> ventana de 700x700
 HUD_HEIGHT = 40
+
+
+def _parse_point(value, name: str) -> np.ndarray:
+    """[x, y] -> array dentro del mundo; error claro si el formato no es válido."""
+    arr = np.asarray(value, dtype=np.float64)
+    if arr.shape != (2,) or not np.all(np.isfinite(arr)):
+        raise ValueError(f"'{name}' debe ser [x, y] con números finitos, recibido: {value!r}")
+    return np.clip(arr, 0.0, WORLD_SIZE)
 
 
 class BoatEnv(gym.Env):
@@ -81,7 +90,17 @@ class BoatEnv(gym.Env):
 
     # ------------------------------------------------------------------ API Gym
     def reset(self, *, seed: int | None = None, options: dict | None = None):
+        """Nuevo episodio. Sin `options`, el escenario es aleatorio (reproducible con `seed`).
+
+        `options` permite fijar parte o todo el escenario (lo usa el servidor web);
+        lo que no se indique se genera al azar:
+            start:     [x, y]             posición inicial del barco
+            goal:      [x, y]             posición de la meta
+            heading:   float              rumbo inicial en radianes
+            obstacles: [[x, y, r], ...]   lista completa de obstáculos ([] = ninguno)
+        """
         super().reset(seed=seed)
+        options = options or {}
         rng = self.np_random
 
         if isinstance(self.n_obstacles, tuple):
@@ -90,13 +109,43 @@ class BoatEnv(gym.Env):
             n_obs = int(self.n_obstacles)
 
         lo, hi = SPAWN_MARGIN, WORLD_SIZE - SPAWN_MARGIN
-        self.pos = rng.uniform(lo, hi, size=2)
-        while True:
-            self.goal = rng.uniform(lo, hi, size=2)
-            if np.linalg.norm(self.goal - self.pos) >= MIN_START_GOAL_DIST:
-                break
+        self.pos = _parse_point(options["start"], "start") if "start" in options else rng.uniform(lo, hi, size=2)
+        if "goal" in options:
+            self.goal = _parse_point(options["goal"], "goal")
+        else:
+            while True:
+                self.goal = rng.uniform(lo, hi, size=2)
+                if np.linalg.norm(self.goal - self.pos) >= MIN_START_GOAL_DIST:
+                    break
 
-        # Obstáculos sin solaparse entre sí ni tapar la salida o la meta (muestreo por rechazo)
+        if "obstacles" in options:
+            self.set_obstacles(options["obstacles"])
+        else:
+            self._random_obstacles(n_obs)
+
+        to_goal = self.goal - self.pos
+        if "heading" in options:
+            self.heading = float(options["heading"])
+        else:
+            # Rumbo inicial: hacia la meta ± 90°, para que no empiece mirando a una pared
+            self.heading = math.atan2(to_goal[1], to_goal[0]) + rng.uniform(-math.pi / 2, math.pi / 2)
+        self.omega = 0.0
+        self.speed = SPEED
+
+        self.steps = 0
+        self.prev_dist = float(np.linalg.norm(to_goal))
+        self.episode_return = 0.0
+        self.last_event = None
+        self.trail = [self.pos.copy()]
+
+        obs = self._get_obs()
+        if self.render_mode == "human":
+            self.render()
+        return obs, {}
+
+    def _random_obstacles(self, n_obs: int) -> None:
+        """Obstáculos sin solaparse entre sí ni tapar la salida o la meta (muestreo por rechazo)."""
+        rng = self.np_random
         centers, radii = [], []
         attempts = 0
         while len(centers) < n_obs and attempts < 1000:
@@ -107,28 +156,57 @@ class BoatEnv(gym.Env):
                 continue
             if np.linalg.norm(c - self.goal) < r + GOAL_RADIUS + 3.0:
                 continue
-            if any(np.linalg.norm(c - c2) < r + r2 + 2.0 for c2, r2 in zip(centers, radii)):
+            if any(np.linalg.norm(c - c2) < r + r2 + 2.0 for c2, r2 in zip(centers, radii, strict=True)):
                 continue
             centers.append(c)
             radii.append(r)
         self.obs_centers = np.array(centers, dtype=np.float64).reshape(-1, 2)
         self.obs_radii = np.array(radii, dtype=np.float64)
 
-        # Rumbo inicial: hacia la meta ± 90°, para que no empiece mirando a una pared
-        to_goal = self.goal - self.pos
-        self.heading = math.atan2(to_goal[1], to_goal[0]) + rng.uniform(-math.pi / 2, math.pi / 2)
-        self.omega = 0.0
-        self.speed = SPEED
+    # ------------------------------------------------- Edición del escenario en vivo
+    def set_obstacles(self, obstacles) -> None:
+        """Sustituye los obstáculos por `[[x, y, r], ...]` (se recortan a los límites del mundo)."""
+        arr = np.asarray(obstacles, dtype=np.float64) if len(obstacles) else np.empty((0, 3))
+        if arr.ndim != 2 or arr.shape[1] != 3 or not np.all(np.isfinite(arr)):
+            raise ValueError(
+                f"'obstacles' debe ser una lista de [x, y, r] con números finitos, recibido: {obstacles!r}"
+            )
+        self.obs_radii = np.clip(arr[:, 2], *EDIT_RADIUS_LIMITS)
+        self.obs_centers = np.clip(arr[:, :2], 0.0, WORLD_SIZE)
 
-        self.steps = 0
-        self.prev_dist = float(np.linalg.norm(to_goal))
-        self.episode_return = 0.0
-        self.trail = [self.pos.copy()]
+    def set_goal(self, goal) -> None:
+        """Mueve la meta durante el episodio sin romper la recompensa por progreso."""
+        self.goal = _parse_point(goal, "goal")
+        self.prev_dist = float(np.linalg.norm(self.goal - self.pos))
 
-        obs = self._get_obs()
-        if self.render_mode == "human":
-            self.render()
-        return obs, {}
+    def get_state(self) -> dict:
+        """Estado completo para pintar fuera de pygame (frontend web). Solo tipos JSON.
+
+        La estela no se incluye: crecería con cada paso; el cliente la acumula con `boat`.
+        """
+        angles = self.heading + self._ray_offsets
+        return {
+            "step": self.steps,
+            "episode_return": round(self.episode_return, 3),
+            "event": self.last_event,
+            "boat": {
+                "x": round(float(self.pos[0]), 3),
+                "y": round(float(self.pos[1]), 3),
+                "heading": round(self.heading, 4),
+                "omega": round(self.omega, 4),
+                "speed": round(self.speed, 3),
+                "radius": BOAT_RADIUS,
+            },
+            "goal": {"x": round(float(self.goal[0]), 3), "y": round(float(self.goal[1]), 3), "radius": GOAL_RADIUS},
+            "obstacles": [
+                {"x": round(float(c[0]), 3), "y": round(float(c[1]), 3), "radius": round(float(r), 3)}
+                for c, r in zip(self.obs_centers, self.obs_radii, strict=True)
+            ],
+            "rays": [
+                {"angle": round(float(a), 4), "distance": round(float(d), 3)}
+                for a, d in zip(angles, self._ray_distances(), strict=True)
+            ],
+        }
 
     def step(self, action):
         turn = self.ACTIONS[int(action)]
@@ -158,6 +236,7 @@ class BoatEnv(gym.Env):
             event = "timeout"
 
         self.episode_return += reward
+        self.last_event = event
         info = {"is_success": event == "goal", "event": event}
 
         obs = self._get_obs()
@@ -246,7 +325,7 @@ class BoatEnv(gym.Env):
         pygame.draw.circle(s, (220, 255, 220), px(self.goal), int(GOAL_RADIUS * RENDER_SCALE), 2)
 
         # Obstáculos (rocas)
-        for c, r in zip(self.obs_centers, self.obs_radii):
+        for c, r in zip(self.obs_centers, self.obs_radii, strict=True):
             pygame.draw.circle(s, (110, 98, 84), px(c), int(r * RENDER_SCALE))
             pygame.draw.circle(s, (70, 60, 50), px(c), int(r * RENDER_SCALE), 3)
 
@@ -256,7 +335,7 @@ class BoatEnv(gym.Env):
 
         # Rayos: verde = libre, rojo = obstáculo cerca
         dists = self._ray_distances()
-        for off, d in zip(self._ray_offsets, dists):
+        for off, d in zip(self._ray_offsets, dists, strict=True):
             a = self.heading + off
             end = self.pos + d * np.array([math.cos(a), math.sin(a)])
             k = d / RAY_RANGE

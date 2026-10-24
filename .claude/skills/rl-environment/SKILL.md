@@ -62,8 +62,11 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
 ## 5. Estado para la web
 
 - `get_state() -> dict` devuelve solo tipos JSON (floats redondeados, listas), sin arrays NumPy.
-- `reset(options={"obstacles": [...], "start": ..., "goal": ...})` permite fijar el escenario desde fuera;
-  valida y recorta los valores a los límites del mundo.
+  No incluye la estela (crecería sin límite a 60 Hz): el cliente la acumula a partir de `boat`.
+- `reset(options={"start": [x, y], "goal": [x, y], "heading": rad, "obstacles": [[x, y, r], ...]})`
+  fija el escenario desde fuera (lo omitido es aleatorio); valida y recorta a los límites del mundo.
+- Edición en vivo sin reiniciar: `set_obstacles([[x, y, r], ...])` y `set_goal([x, y])`.
+- Toda variante nueva debe conservar estas tres APIs y sus tests en `tests/test_boat_env.py`.
 
 ## 6. Validación de cada cambio
 
