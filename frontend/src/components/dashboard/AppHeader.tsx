@@ -2,6 +2,7 @@
 
 import { Keyboard, Sailboat, Swords } from "lucide-react";
 
+import { BoatLogo } from "@/components/dashboard/BoatLogo";
 import { ConnectionBadge } from "@/components/dashboard/ConnectionBadge";
 import { SELECTED } from "@/components/simulation/controls";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,11 @@ type AppHeaderProps = {
 export function AppHeader({ mode, onModeChange, connection, onOpenShortcuts }: AppHeaderProps) {
   return (
     <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h1 className="text-2xl font-semibold italic xl:text-3xl">Bitácora de Barco Autónomo</h1>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <h1 className="flex items-center gap-3 text-2xl font-semibold italic xl:text-3xl">
+          <BoatLogo className="size-10 xl:size-11" />
+          Bitácora de Barco Autónomo
+        </h1>
         <p className="text-sm text-muted-foreground">
           Un agente que aprende a navegar entre rocas mediante aprendizaje por refuerzo
         </p>
