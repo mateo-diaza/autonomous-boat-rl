@@ -24,27 +24,32 @@ Los detalles cartográficos (rosa de los vientos, retícula) se quedan **dentro 
 5. **Legible a distancia**: es una demo proyectada. Texto mínimo 14px, métricas clave grandes (≥ 28px).
    El tema claro pierde saturación en proyector: por eso los colores de texto están oscurecidos (ver §3).
 
-## 2. Layout (escritorio ≥ 1280px)
+## 2. Layout (escritorio ≥ 1024px): ocupar toda la pantalla
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Cabecera: título (serif, cursiva) · selector problema/run · conexión │
-├───────────────────────────────────────────────┬──────────────────────┤
-│                                               │  Widget "Cerebro"    │
-│        CARTA (canvas cuadrado)                │  rayos + prob. acción│
-│   rosa de los vientos · retícula · HUD        ├──────────────────────┤
-│                                               │  Widget "Travesía"  │
-├───────────────────────────────────────────────┤  (pasos, retorno...) │
-│ Barra: ▶ ⏸ ⏭  velocidad · herramientas mapa   ├──────────────────────┤
-├───────────────────────────────────────────────┤  Widget              │
-│ Línea del tiempo de checkpoints (escala náutica)│  "Aprendizaje"      │
-└───────────────────────────────────────────────┴──────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Título · subtítulo                                      [Atajos] [● Conexión] │
+├───────────────────────────────────────┬──────────────────────────────────┤
+│                                       │ Controles: ▶ ⏭ ↺ ⤨ · velocidad ·  │
+│                                       │ interruptores · editar carta     │
+│        CARTA (canvas cuadrado)        ├────────────────┬─────────────────┤
+│   alto = todo el alto disponible      │ Modelo         │ Cerebro         │
+│   ancho = su alto (cede si hace falta │ (run + línea   │ (abanico +      │
+│   para dejar ≥ 640px a la derecha)    │  del tiempo)   │  maniobras)     │
+│                                       ├────────────────┼─────────────────┤
+│                                       │ Travesía       │ Aprendizaje     │
+└───────────────────────────────────────┴────────────────┴─────────────────┘
 ```
 
-- Grid: canvas ~2/3, panel lateral ~1/3. Gutter 16–24px. Máx ancho 1600px centrado.
-- < 1024px: una columna (canvas arriba, paneles debajo). Sin scroll horizontal nunca.
-- La línea de checkpoints se dibuja como la **escala gráfica de una carta** (barra con tramos alternos
-  tinta/papel y marcas "0k · 10k · 25k…"); la tasa de éxito puede teñir cada tramo.
+- **La página mide exactamente el alto de la ventana** (`h-dvh`): nada de márgenes muertos ni scroll de página.
+  Si los paneles no caben (pantallas < 1080px de alto), hace scroll **solo la columna derecha**.
+- La carta es la protagonista: tan grande como permita el alto. Su widget se centra en vertical si no puede ser cuadrado.
+- Paneles en rejilla `repeat(auto-fit, minmax(300px, 1fr))`: 2 columnas en escritorio, 1 en estrecho; las filas
+  se estiran para llenar el alto. El contenido de cada widget debe crecer con él (abanico, gráficas con `w-full`).
+- Objetivo verificable: a **1920×1080 todo visible sin scroll**; a 1440×900 y 1366×768, 2 columnas de paneles.
+- < 1024px: una columna (carta arriba a todo el ancho, controles y paneles debajo), scroll normal de página.
+- Todo widget es `position: relative` (`.widget`): los hijos absolutos (textos `sr-only`) no deben escaparse
+  de los contenedores con scroll y estirar el documento.
 
 ## 3. Tokens de color (variables CSS en `globals.css`, tema claro por defecto)
 

@@ -7,6 +7,8 @@ import { formatReturn } from "@/lib/format";
 import type { SimState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const VISIBLE_LOG_ENTRIES = 4;
+
 type VoyagePanelProps = {
   sim: SimState | null;
   episodes: EpisodeLogEntry[];
@@ -39,7 +41,7 @@ export function VoyagePanel({ sim, episodes }: VoyagePanelProps) {
         <p className="mt-2 text-sm text-muted-foreground">Las travesías terminadas aparecerán aquí.</p>
       ) : (
         <ol className="mt-2 flex flex-col gap-1.5">
-          {episodes.map((episode) => {
+          {episodes.slice(0, VISIBLE_LOG_ENTRIES).map((episode) => {
             const outcome = EPISODE_OUTCOMES[episode.event];
             const Icon = outcome.icon;
             return (

@@ -27,6 +27,12 @@ Lee también `clean-code`, `ui-design` y `web-accessibility`: las tres aplican a
 - `next lint` ya no existe: `pnpm lint` ejecuta el CLI de ESLint (config plana `eslint.config.mjs`).
 - `cn()` viene del paquete `cn` (de shadcn, sustituye a clsx + tailwind-merge): `import { cn } from "@/lib/utils"`.
 - `<Toaster theme="light" />` fijo: no hay ThemeProvider de next-themes.
+- **Tailwind v4 va por PostCSS** (`postcss.config.mjs` + `@tailwindcss/postcss`), la vía documentada por Next.
+  La plantilla traía un loader `@tailwindcss/turbopack` que dejaba el CSS **obsoleto** en `next dev` (cambios de
+  `globals.css` que no llegaban y caché persistente que servía estilos viejos tras reiniciar). No volver a usarlo.
+  Si el CSS servido no coincide con el código: parar el servidor, `rm -rf frontend/.next` y arrancar.
+- Nunca confíes solo en una animación CSS para ocultar/quitar algo: desmonta con un temporizador
+  (la animación es estética). Ver `EpisodeFlash` en `SimStage.tsx`.
 - Toda la app es una demo local: no hay auth, ni base de datos, ni SSR de datos del backend.
 - URL del backend en `NEXT_PUBLIC_API_URL` (por defecto `http://localhost:8000`) leída en un único módulo `lib/config.ts`.
 

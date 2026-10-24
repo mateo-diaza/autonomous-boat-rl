@@ -77,10 +77,10 @@ export function Dashboard() {
   const connected = connection === "open";
 
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 lg:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold italic lg:text-4xl">Bitácora del barco autónomo</h1>
+    <div className="flex min-h-dvh flex-col gap-3 p-3 lg:h-dvh lg:p-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h1 className="text-2xl font-semibold italic xl:text-3xl">Bitácora del barco autónomo</h1>
           <p className="text-sm text-muted-foreground">
             Un agente que aprende a navegar entre rocas mediante aprendizaje por refuerzo
           </p>
@@ -94,20 +94,25 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="grid flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
-        {/* La carta es cuadrada: se limita por la altura de la ventana para que quepa con sus controles */}
-        <div className="mx-auto flex w-full flex-col gap-4 lg:max-w-[max(36rem,calc(100dvh-17rem))]">
-          <SimStage
-            world={world}
-            frames={frames}
-            snapshot={snapshot}
-            connection={connection}
-            tool={tool}
-            showRays={showRays}
-            modelLabel={modelLabel(detail, checkpointId)}
-            lastEpisode={episodes[0]}
-            send={send}
-          />
+      {/*
+        Escritorio: la página mide exactamente el alto de la ventana. La carta (cuadrada) ocupa todo el alto
+        y su ancho sale de ahí, pero cede lo justo para dejar 640px a la derecha (2 columnas de paneles).
+      */}
+      <main className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <SimStage
+          className="lg:aspect-square lg:h-full lg:max-w-[calc(100vw_-_2.75rem_-_640px)]"
+          world={world}
+          frames={frames}
+          snapshot={snapshot}
+          connection={connection}
+          tool={tool}
+          showRays={showRays}
+          modelLabel={modelLabel(detail, checkpointId)}
+          lastEpisode={episodes[0]}
+          send={send}
+        />
+
+        <div className="flex min-h-0 flex-col gap-3 lg:overflow-y-auto">
           <SimToolbar
             status={snapshot?.status ?? null}
             sim={sim}
@@ -119,25 +124,27 @@ export function Dashboard() {
             onShowRaysChange={setShowRays}
             send={send}
           />
+          <section
+            aria-label="Paneles de información"
+            className="grid flex-1 gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))]"
+          >
+            <ModelPicker
+              runs={runs}
+              runsError={runsState.status === "error" ? runsState.message : null}
+              onRetryRuns={retryRuns}
+              runId={runId}
+              onRunChange={setChosenRunId}
+              detail={detail}
+              checkpointId={checkpointId}
+              onCheckpointChange={selectCheckpoint}
+            />
+            <BrainPanel sim={sim} world={world} algo={snapshot?.status.model?.algo ?? null} />
+            <VoyagePanel sim={sim} episodes={episodes} />
+            <Widget title="Aprendizaje" icon={<LineChart />}>
+              <p className="text-sm text-muted-foreground">La curva de aprendizaje llegará en la fase 5.</p>
+            </Widget>
+          </section>
         </div>
-
-        <aside className="flex flex-col gap-4" aria-label="Paneles de información">
-          <ModelPicker
-            runs={runs}
-            runsError={runsState.status === "error" ? runsState.message : null}
-            onRetryRuns={retryRuns}
-            runId={runId}
-            onRunChange={setChosenRunId}
-            detail={detail}
-            checkpointId={checkpointId}
-            onCheckpointChange={selectCheckpoint}
-          />
-          <BrainPanel sim={sim} world={world} algo={snapshot?.status.model?.algo ?? null} />
-          <VoyagePanel sim={sim} episodes={episodes} />
-          <Widget title="Aprendizaje" icon={<LineChart />}>
-            <p className="text-sm text-muted-foreground">La curva de aprendizaje llegará en la fase 5.</p>
-          </Widget>
-        </aside>
       </main>
 
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />

@@ -24,9 +24,9 @@ export function BrainPanel({ sim, world, algo }: BrainPanelProps) {
   const probs = sim?.action_probs ?? null;
   return (
     <Widget title="Cerebro del agente" icon={<BrainCircuit />}>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
+      <div className="flex flex-col items-center gap-4">
         <SensorFan sim={sim} world={world} />
-        <ul className="flex flex-col gap-2.5" aria-label="Preferencia por cada acción">
+        <ul className="flex w-full flex-col gap-2.5" aria-label="Preferencia por cada acción">
           {ACTIONS.map((action, index) => {
             const chosen = sim?.action === index;
             const value = probs?.[index] ?? null;
@@ -75,14 +75,12 @@ function SensorFan({ sim, world }: { sim: SimState | null; world: WorldInfo | nu
 
   return (
     <svg
-      width={width}
-      height={height}
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label={
         sim ? `Sensor: ${nearCount} de ${rays.length} rayos detectan un obstáculo cercano` : "Sensor sin datos"
       }
-      className="shrink-0"
+      className="h-auto w-full max-w-72"
     >
       <path
         d={`M ${center.x - maxLength} ${center.y} A ${maxLength} ${maxLength} 0 0 1 ${center.x + maxLength} ${center.y}`}
