@@ -35,7 +35,7 @@ def list_runs(models_dir: Path) -> list[RunSummary]:
     """Runs con config.json, en el orden del catálogo de problemas (y sin sensores antes que con sensores).
 
     Así cada pareja comparable queda junta en la web ("Corrientes" / "Corrientes + sensor"). Dentro de un
-    mismo grupo, el más reciente primero.
+    mismo grupo, el más reciente primero. Cada grupo lleva un número en ese orden ("4 · Corrientes + sensor").
     """
     if not models_dir.is_dir():
         return []
@@ -43,7 +43,22 @@ def list_runs(models_dir: Path) -> list[RunSummary]:
     run_dirs.sort(key=lambda d: d.stat().st_mtime, reverse=True)
     runs = _unique_labels([_summary(d, _checkpoints(d), _curve(d)) for d in run_dirs])
     problem_order = {problem_id: i for i, problem_id in enumerate(PROBLEMS)}
-    return sorted(runs, key=lambda r: (problem_order.get(r.problem, len(problem_order)), len(r.sensors)))
+    runs.sort(key=lambda r: (problem_order.get(r.problem, len(problem_order)), len(r.sensors)))
+    return _numbered(runs)
+
+
+def run_label(models_dir: Path, run_id: str) -> str | None:
+    """Nombre numerado de un run tal como aparece en el desplegable (None si no existe)."""
+    return next((r.label for r in list_runs(models_dir) if r.id == run_id), None)
+
+
+def _numbered(runs: list[RunSummary]) -> list[RunSummary]:
+    """Antepone el número de grupo: los runs del mismo problema y sensores (semillas) comparten número."""
+    numbers: dict[tuple[str, tuple[str, ...]], int] = {}
+    for run in runs:
+        number = numbers.setdefault((run.problem, tuple(run.sensors)), len(numbers) + 1)
+        run.label = f"{number} · {run.label}"
+    return runs
 
 
 def _unique_labels(runs: list[RunSummary]) -> list[RunSummary]:

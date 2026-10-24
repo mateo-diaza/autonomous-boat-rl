@@ -14,7 +14,7 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from backend.config import CORS_ORIGINS, SIM_HZ, SPEED_LIMITS
 from backend.models_cache import load_model
 from backend.playback import Playback
-from backend.runs import checkpoint_path, read_config
+from backend.runs import checkpoint_path, read_config, run_label
 from backend.schemas import ErrorMsg, ModelRef, WorldInfo
 from training.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
 from training.problems import model_display_name, run_env_kwargs, sensor_kwargs, sensor_names
@@ -93,7 +93,7 @@ async def load_checkpoint(
     sensors = sensor_kwargs(run_env_kwargs(config))
     model = await asyncio.to_thread(load_model, path, config["algo"])
     ref = ModelRef(run_id=run_id, checkpoint_id=checkpoint_id, algo=config["algo"], sensors=sensor_names(sensors),
-                   label=model_display_name(config)[0])
+                   label=run_label(models_dir, run_id) or model_display_name(config)[0])
     return model, ref, sensors
 
 

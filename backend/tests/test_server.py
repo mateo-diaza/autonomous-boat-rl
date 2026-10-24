@@ -253,8 +253,8 @@ def test_unexpected_tick_error_pauses_and_warns_without_closing():
 
 def test_runs_have_friendly_names(client):
     runs = {r["id"]: r for r in client.get("/api/runs").json()}
-    assert runs[RUN]["label"] == "Mar en calma" and runs[RUN]["subtitle"] == "sin dificultades extra"
-    assert runs[SENSOR_RUN]["label"] == "Corrientes + sensor"
+    assert runs[RUN]["label"] == "1 · Mar en calma" and runs[RUN]["subtitle"] == "sin dificultades extra"
+    assert runs[SENSOR_RUN]["label"] == "2 · Corrientes + sensor"
     assert runs[SENSOR_RUN]["subtitle"] == "corriente aleatoria · sensor de corriente"
 
 
@@ -276,6 +276,27 @@ def test_duplicate_labels_are_disambiguated():
                           obstacles="4-10", total_steps=1, n_checkpoints=1, best_success_rate=None)
 
     assert [r.label for r in _unique_labels([run("a"), run("b")])] == ["Corrientes", "Corrientes (2)"]
+
+
+def test_seeds_of_the_same_model_share_number():
+    from backend.runs import _numbered
+    from backend.schemas import RunSummary
+
+    def run(run_id, problem, sensors):
+        return RunSummary(id=run_id, algo="dqn", problem=problem, sensors=sensors, label=run_id, subtitle="",
+                          obstacles="4-10", total_steps=1, n_checkpoints=1, best_success_rate=None)
+
+    runs = [run("a", "base", []), run("b", "moving", []), run("c", "moving", []), run("d", "moving", ["memory"])]
+    assert [r.label for r in _numbered(runs)] == ["1 · a", "2 · b", "2 · c", "3 · d"]
+
+
+def test_loaded_model_uses_numbered_label(models_dir):
+    import asyncio
+
+    from backend.routes._ws import load_checkpoint
+
+    _, ref, _ = asyncio.run(load_checkpoint(models_dir, SENSOR_RUN, "final"))
+    assert ref.label == "2 · Corrientes + sensor"
 
 
 def test_restart_reproduces_moving_rocks():
