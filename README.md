@@ -65,14 +65,17 @@ python -m training.play
 # Entrenar. El algoritmo del proyecto es DQN (PPO sigue disponible con --algo ppo; sus runs están en
 # training/models/_archivo/ppo). Por defecto: 50k pasos y un checkpoint cada 2.5k para ver la progresión.
 python -m training.train --run dqn                                                        # mar en calma
-# Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap | u_trap_path
+# Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap | u_trap_path | moving
 python -m training.train --problem sparse --run dqn_sparse                                # recompensa escasa
 python -m training.train --problem current --steps 100000 --ckpt-freq 5000 --run dqn_current
 python -m training.train --problem current --steps 100000 --ckpt-freq 5000 --observe-current --run dqn_current_sensor
 python -m training.train --problem u_trap --steps 100000 --run dqn_u_trap                 # se atasca en la U
 # Trampa en U resuelta: recompensa por ruta navegable + sensor de ruta ("GPS náutico")
 python -m training.train --problem u_trap_path --observe-route --steps 150000 --ckpt-freq 5000 --run dqn_u_trap_route
-# Los sensores (--observe-current, --observe-route) son del modelo, no del mar: la web reconstruye el barco con ellos
+# Rocas a la deriva (5-8 u/s): sin memoria y con memoria de 4 instantes (frame stacking)
+python -m training.train --problem moving --steps 100000 --ckpt-freq 5000 --run dqn_moving
+python -m training.train --problem moving --steps 100000 --ckpt-freq 5000 --frame-stack 4 --run dqn_moving_memory
+# Los sensores (--observe-current, --observe-route, --frame-stack) son del modelo, no del mar: la web reconstruye el barco con ellos
 # Todo es configurable: --steps, --ckpt-freq, --n-envs, --lr, --obstacles (y --n-steps, --n-epochs para PPO)
 
 # Ver cómo aprende en pygame: reproduce los checkpoints en orden sobre los mismos escenarios
