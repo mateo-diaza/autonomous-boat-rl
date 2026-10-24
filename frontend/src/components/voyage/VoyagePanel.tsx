@@ -24,7 +24,7 @@ export function VoyagePanel({ sim, episodes }: VoyagePanelProps) {
     <Widget title="Travesía" icon={<Sailboat />}>
       <dl className="grid grid-cols-3 gap-2">
         <Metric label="Paso" value={sim ? String(sim.step) : "—"} />
-        <Metric label="Retorno" value={sim ? formatReturn(sim.episode_return) : "—"} />
+        <Metric label="Retorno" value={sim ? formatReturn(sim.episode_return, { compact: true }) : "—"} />
         <Metric label="A la boya" value={distance === null ? "—" : `${distance.toFixed(0)} u`} />
       </dl>
 
@@ -67,9 +67,10 @@ export function VoyagePanel({ sim, episodes }: VoyagePanelProps) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-secondary px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-mono text-xl tabular-nums">{value}</dd>
+    // @container: la cifra se encoge con el ancho de la tarjeta (cqi) si no cabe a su tamaño normal
+    <div className="@container min-w-0 rounded-xl bg-secondary px-3 py-2">
+      <dt className="truncate text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-mono text-[clamp(0.875rem,32cqi,1.25rem)] whitespace-nowrap tabular-nums">{value}</dd>
     </div>
   );
 }

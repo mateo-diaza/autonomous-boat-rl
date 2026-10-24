@@ -2,6 +2,7 @@
 
 const percent = new Intl.NumberFormat("es-ES", { style: "percent", maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1, signDisplay: "exceptZero" });
+const integer = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0, signDisplay: "exceptZero" });
 
 /** 25000 -> "25k"; 1500000 -> "1,5M". */
 export function formatSteps(steps: number): string {
@@ -15,7 +16,7 @@ export function formatPercent(value: number | null): string {
   return value === null ? "—" : percent.format(value);
 }
 
-/** 163.27 -> "+163,3". */
-export function formatReturn(value: number): string {
-  return decimal.format(value);
+/** 163.27 -> "+163,3"; con `compact`, "+163" (para tarjetas de métrica estrechas). */
+export function formatReturn(value: number, { compact = false } = {}): string {
+  return (compact ? integer : decimal).format(value);
 }
