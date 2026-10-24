@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from backend.schemas import CheckpointInfo, CurvePoint, RunDetail, RunSummary
-from training.problems import DEFAULT_PROBLEM, run_env_kwargs, sensor_kwargs, sensor_names
+from training.problems import DEFAULT_PROBLEM, PROBLEMS, model_display_name, run_env_kwargs, sensor_kwargs, sensor_names
 
 _STEPS_RE = re.compile(r"_(\d+)_steps\.zip$")
 _RUN_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -32,12 +32,28 @@ class CheckpointNotFoundError(LookupError):
 
 
 def list_runs(models_dir: Path) -> list[RunSummary]:
-    """Runs con config.json, del más reciente al más antiguo."""
+    """Runs con config.json, en el orden del catálogo de problemas (y sin sensores antes que con sensores).
+
+    Así cada pareja comparable queda junta en la web ("Corrientes" / "Corrientes + sensor"). Dentro de un
+    mismo grupo, el más reciente primero.
+    """
     if not models_dir.is_dir():
         return []
     run_dirs = [d for d in models_dir.iterdir() if (d / "config.json").is_file() and _RUN_ID_RE.match(d.name)]
     run_dirs.sort(key=lambda d: d.stat().st_mtime, reverse=True)
-    return [_summary(d, _checkpoints(d), _curve(d)) for d in run_dirs]
+    runs = _unique_labels([_summary(d, _checkpoints(d), _curve(d)) for d in run_dirs])
+    problem_order = {problem_id: i for i, problem_id in enumerate(PROBLEMS)}
+    return sorted(runs, key=lambda r: (problem_order.get(r.problem, len(problem_order)), len(r.sensors)))
+
+
+def _unique_labels(runs: list[RunSummary]) -> list[RunSummary]:
+    """Si dos runs se llaman igual ("Corrientes"), el más antiguo pasa a "Corrientes (2)"."""
+    seen: dict[str, int] = {}
+    for run in runs:
+        seen[run.label] = seen.get(run.label, 0) + 1
+        if seen[run.label] > 1:
+            run.label = f"{run.label} ({seen[run.label]})"
+    return runs
 
 
 def get_run(models_dir: Path, run_id: str) -> RunDetail:
@@ -81,12 +97,15 @@ def _run_dir(models_dir: Path, run_id: str) -> Path:
 
 def _summary(run_dir: Path, checkpoints: list[CheckpointInfo], curve: list[CurvePoint]) -> RunSummary:
     config = json.loads((run_dir / "config.json").read_text())
+    label, subtitle = model_display_name(config)
     rates = [p.success_rate for p in curve if p.success_rate is not None]
     return RunSummary(
         id=run_dir.name,
         algo=config["algo"],
         problem=config.get("problem", DEFAULT_PROBLEM),  # runs antiguos: anteriores al catálogo
         sensors=sensor_names(sensor_kwargs(run_env_kwargs(config))),
+        label=label,
+        subtitle=subtitle,
         obstacles=str(config["obstacles"]),
         total_steps=int(config["steps"]),
         n_checkpoints=len(checkpoints),

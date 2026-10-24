@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bitácora del barco autónomo",
+  title: "Bitácora de Barco Autónomo",
   description: "Un barco que aprende a navegar entre rocas con aprendizaje por refuerzo, en vivo.",
 };
 

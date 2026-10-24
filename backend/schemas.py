@@ -46,6 +46,8 @@ class RunSummary(BaseModel):
     algo: Literal["dqn", "ppo"]
     problem: ProblemId          # en qué problema se entrenó
     sensors: list[SensorId]     # sensores extra con los que se entrenó
+    label: str                  # nombre corto para la web ("Corrientes + sensor")
+    subtitle: str               # cómo se entrenó, en una línea ("corriente aleatoria · sensor de corriente")
     obstacles: str
     total_steps: int
     n_checkpoints: int
@@ -99,6 +101,7 @@ class ModelRef(BaseModel):
     checkpoint_id: CheckpointId
     algo: Literal["dqn", "ppo"]
     sensors: list[SensorId] = []   # sensores extra con los que se entrenó (p. ej. "current")
+    label: str = ""                # nombre corto para la web ("Trampa en U + GPS")
 
 
 class SimState(BaseModel):

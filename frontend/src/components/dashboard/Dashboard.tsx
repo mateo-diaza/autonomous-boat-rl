@@ -127,7 +127,6 @@ export function Dashboard({ mode, onModeChange }: DashboardProps) {
               onRetryRuns={retryRuns}
               runId={runId}
               onRunChange={selectRun}
-            problems={problems}
               detail={detail}
               checkpointId={checkpointId}
               onCheckpointChange={selectCheckpoint}

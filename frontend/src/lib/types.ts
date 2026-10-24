@@ -29,6 +29,10 @@ export type RunSummary = {
   /** En qué problema (condiciones del mar) se entrenó. */
   problem: string;
   sensors: SensorId[];
+  /** Nombre corto para mostrar ("Corrientes + sensor"). */
+  label: string;
+  /** Cómo se entrenó, en una línea ("corriente aleatoria · sensor de corriente"). */
+  subtitle: string;
   obstacles: string;
   total_steps: number;
   n_checkpoints: number;
@@ -70,7 +74,14 @@ export type SensorId = "current" | "route";
 
 export type Ray = { angle: number; distance: number };
 
-export type ModelRef = { run_id: string; checkpoint_id: string; algo: Algo; sensors: SensorId[] };
+export type ModelRef = {
+  run_id: string;
+  checkpoint_id: string;
+  algo: Algo;
+  sensors: SensorId[];
+  /** Nombre corto para mostrar ("Trampa en U + GPS"). */
+  label: string;
+};
 
 export type SimState = {
   step: number;

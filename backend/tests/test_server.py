@@ -249,3 +249,30 @@ def test_unexpected_tick_error_pauses_and_warns_without_closing():
     assert session.calls > 2  # el bucle sigue vivo tras el fallo
     assert session.playback.playing is False
     assert [m.message for m in conn.sent] == [SIMULATION_ERROR]
+
+
+def test_runs_have_friendly_names(client):
+    runs = {r["id"]: r for r in client.get("/api/runs").json()}
+    assert runs[RUN]["label"] == "Mar en calma" and runs[RUN]["subtitle"] == "sin dificultades extra"
+    assert runs[SENSOR_RUN]["label"] == "Corrientes + sensor"
+    assert runs[SENSOR_RUN]["subtitle"] == "corriente aleatoria · sensor de corriente"
+
+
+def test_display_name_rules():
+    from training.problems import model_display_name
+
+    assert model_display_name({"problem": "current"}) == ("Corrientes", "corriente aleatoria · sin sensor")
+    route = {"problem": "u_trap_path", "env_kwargs": {"observe_route": True}}
+    assert model_display_name(route) == ("Trampa en U + GPS", "recompensa por ruta · sensor de ruta")
+    assert model_display_name({"problem": "base", "label": "Mi barco"})[0] == "Mi barco"
+
+
+def test_duplicate_labels_are_disambiguated():
+    from backend.runs import _unique_labels
+    from backend.schemas import RunSummary
+
+    def run(run_id):
+        return RunSummary(id=run_id, algo="dqn", problem="current", sensors=[], label="Corrientes", subtitle="",
+                          obstacles="4-10", total_steps=1, n_checkpoints=1, best_success_rate=None)
+
+    assert [r.label for r in _unique_labels([run("a"), run("b")])] == ["Corrientes", "Corrientes (2)"]

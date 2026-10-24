@@ -9,10 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Toggle } from "@/components/ui/toggle";
-import { chronologicalCheckpoints, describeSensors, successAt } from "@/lib/checkpoints";
+import { chronologicalCheckpoints, successAt } from "@/lib/checkpoints";
 import { formatPercent } from "@/lib/format";
-import { problemTitle } from "@/hooks/useProblems";
-import type { ProblemInfo, RunDetail, RunSummary } from "@/lib/types";
+import type { RunDetail, RunSummary } from "@/lib/types";
 
 type ModelPickerProps = {
   /** Por defecto "Modelo"; en la comparativa, "Barco A" / "Barco B". */
@@ -22,8 +21,6 @@ type ModelPickerProps = {
   actions?: ReactNode;
   className?: string;
   runs: RunSummary[] | null;
-  /** Para mostrar en qué condiciones del mar se entrenó cada run. */
-  problems?: ProblemInfo[];
   runsError: string | null;
   onRetryRuns: () => void;
   runId: string | null;
@@ -74,19 +71,17 @@ export function ModelPicker(props: ModelPickerProps) {
               <SelectContent>
                 {runs.map((run) => (
                   <SelectItem key={run.id} value={run.id}>
-                    <span className="font-mono">{run.id}</span>
-                    <span className="text-muted-foreground">
-                      {run.algo.toUpperCase()} · {formatPercent(run.best_success_rate)} ·{" "}
-                      {problemTitle(props.problems ?? [], run.problem)}
+                    <span>{run.label}</span>
+                    <span className="font-mono text-muted-foreground tabular-nums">
+                      {formatPercent(run.best_success_rate)}
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {selectedRun && (
-              <p className="text-xs text-muted-foreground">
-                Entrenado en: <span className="text-foreground">{problemTitle(props.problems ?? [], selectedRun.problem)}</span>
-                {selectedRun.sensors.length > 0 && ` · ${describeSensors(selectedRun.sensors)}`}
+              <p className="text-xs text-muted-foreground" title={`${selectedRun.id} · ${selectedRun.algo.toUpperCase()}`}>
+                Entrenado con {selectedRun.subtitle}
               </p>
             )}
           </div>

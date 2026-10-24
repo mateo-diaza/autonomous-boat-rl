@@ -102,7 +102,9 @@ def main():
                         help="pasos entre checkpoints; por defecto 1 por actualización en PPO (1024) y 2.5k en DQN")
     parser.add_argument("--n-epochs", type=int, default=None, help="PPO: pasadas por lote de experiencia (5)")
     parser.add_argument("--lr", type=float, default=None, help="tasa de aprendizaje (por defecto la del algoritmo)")
-    parser.add_argument("--run", default=None, help="nombre del experimento")
+    parser.add_argument("--run", default=None, help="nombre del experimento (identificador técnico, carpeta)")
+    parser.add_argument("--label", default=None,
+                        help="nombre corto para la web; por defecto se deduce del problema y los sensores")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -128,7 +130,8 @@ def main():
         {"algo": args.algo, "problem": args.problem, "env_kwargs": env_kwargs,
          "obstacles": format_obstacles(env_kwargs["n_obstacles"]), "steps": steps, "seed": args.seed,
          "n_envs": n_envs, "n_steps": n_steps or None, "ckpt_freq": ckpt_freq,
-         "lr": lr, "n_epochs": n_epochs if args.algo == "ppo" else None}, indent=2))
+         "lr": lr, "n_epochs": n_epochs if args.algo == "ppo" else None,
+         **({"label": args.label} if args.label else {})}, indent=2))
 
     env = make_vec_env(BoatEnv, n_envs=n_envs, seed=args.seed, env_kwargs=env_kwargs,
                        vec_env_cls=SubprocVecEnv if n_envs > 1 else None)

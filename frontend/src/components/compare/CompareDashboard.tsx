@@ -137,7 +137,6 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
                   onRetryRuns={retryRuns}
                   runId={selection.runId}
                   onRunChange={selection.selectRun}
-                  problems={problems}
                   detail={selection.detail}
                   checkpointId={selection.checkpointId}
                   onCheckpointChange={selection.selectCheckpoint}

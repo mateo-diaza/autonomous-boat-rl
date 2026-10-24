@@ -20,6 +20,11 @@ DEFAULT_PROBLEM = "base"
 #: Parámetros de BoatEnv que cambian la observación (y por tanto la red): son del modelo, no del mar
 SENSOR_KEYS = ("observe_current", "observe_route")
 SENSOR_NAMES = {"observe_current": "current", "observe_route": "route"}
+#: Cómo se nombra cada sensor: sufijo del nombre corto del modelo y texto de su descripción
+SENSOR_DISPLAY = {
+    "observe_current": (" + sensor", "sensor de corriente"),
+    "observe_route": (" + GPS", "sensor de ruta"),
+}
 
 
 @dataclass(frozen=True)
@@ -30,6 +35,11 @@ class Problem:
     #: máximo ~130 caracteres (2 líneas), o la columna derecha deja de caber a 1920x1080
     description: str
     env_kwargs: dict = field(default_factory=dict)
+    #: Nombre corto de un MODELO entrenado en este problema ("Corrientes") y nota de cómo se entrenó
+    model_name: str = ""
+    training_note: str = ""
+    #: Nota si el modelo se entrenó SIN sensores en un problema donde importan ("sin sensor")
+    no_sensor_note: str = ""
 
 
 _BASE_ENV = {"n_obstacles": (4, 10)}
@@ -44,6 +54,8 @@ PROBLEMS: dict[str, Problem] = {
                 "El problema original: entre 4 y 10 rocas. La recompensa premia cada paso que acerca a la boya."
             ),
             env_kwargs=_BASE_ENV,
+            model_name="Mar en calma",
+            training_note="sin dificultades extra",
         ),
         Problem(
             id="sparse",
@@ -53,6 +65,8 @@ PROBLEMS: dict[str, Problem] = {
                 "aprende de las veces que acierta por casualidad, tarde y a trompicones."
             ),
             env_kwargs={**_BASE_ENV, "reward_mode": "sparse"},
+            model_name="Sin pistas",
+            training_note="recompensa escasa",
         ),
         Problem(
             id="current",
@@ -62,6 +76,9 @@ PROBLEMS: dict[str, Problem] = {
                 "y debe deducirla de la deriva: observabilidad parcial."
             ),
             env_kwargs={**_BASE_ENV, "current_speed": (4.0, 6.5)},
+            model_name="Corrientes",
+            training_note="corriente aleatoria",
+            no_sensor_note="sin sensor",
         ),
         Problem(
             id="u_trap",
@@ -71,6 +88,8 @@ PROBLEMS: dict[str, Problem] = {
                 "callejón: un mínimo local de la recompensa."
             ),
             env_kwargs={"n_obstacles": (0, 3), "u_trap": True},
+            model_name="Trampa en U",
+            training_note="recompensa normal",
         ),
         Problem(
             id="u_trap_path",
@@ -80,6 +99,8 @@ PROBLEMS: dict[str, Problem] = {
                 "rodear la U ya no se castiga."
             ),
             env_kwargs={"n_obstacles": (0, 3), "u_trap": True, "reward_mode": "path"},
+            model_name="Trampa en U",
+            training_note="recompensa por ruta",
         ),
     ]
 }
@@ -120,3 +141,17 @@ def sensor_kwargs(env_kwargs: dict) -> dict:
 def sensor_names(sensors: dict) -> list[str]:
     """{"observe_current": True} -> ["current"] (identificadores estables para la API)."""
     return [SENSOR_NAMES[key] for key in SENSOR_KEYS if sensors.get(key)]
+
+
+def model_display_name(config: dict) -> tuple[str, str]:
+    """Nombre corto y descripción de un run para la web, a partir de su config.json.
+
+    ("Trampa en U + GPS", "recompensa por ruta · sensor de ruta"). Un "label" en el config tiene prioridad.
+    """
+    problem = PROBLEMS.get(config.get("problem", DEFAULT_PROBLEM), PROBLEMS[DEFAULT_PROBLEM])
+    sensors = sensor_kwargs(run_env_kwargs(config))
+    name = problem.model_name + "".join(SENSOR_DISPLAY[key][0] for key in SENSOR_KEYS if sensors.get(key))
+    details = [problem.training_note] + [SENSOR_DISPLAY[key][1] for key in SENSOR_KEYS if sensors.get(key)]
+    if not sensors and problem.no_sensor_note:
+        details.append(problem.no_sensor_note)
+    return config.get("label") or name, " · ".join(details)

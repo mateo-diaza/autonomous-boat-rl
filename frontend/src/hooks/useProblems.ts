@@ -21,8 +21,3 @@ export function useProblems() {
 
   return problems;
 }
-
-/** Título legible de un problema ("sparse" -> "Recompensa escasa"). */
-export function problemTitle(problems: ProblemInfo[], id: string): string {
-  return problems.find((p) => p.id === id)?.title ?? id;
-}

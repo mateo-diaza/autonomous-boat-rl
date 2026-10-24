@@ -48,6 +48,9 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
    ```
    `title`/`description` en español: los muestra el frontend (lenguaje llano + qué dificultad de RL ilustra).
    La descripción, ≤ ~130 caracteres (2 líneas en la barra de controles).
+   Además `model_name` y `training_note` (y `no_sensor_note` si hay sensores que importan): de ahí sale el
+   nombre de los modelos en la web ("Corrientes + sensor" · "corriente aleatoria · sensor de corriente").
+   Nada de ids técnicos (`dqn_current_sensor`) ni del algoritmo en la interfaz: solo en tooltips.
    Los parámetros que cambian la OBSERVACIÓN (sensores: `observe_current`, `observe_route`) no van en el problema sino en
    el modelo: se eligen al entrenar (`--observe-current`), se guardan en su config.json y el backend reconstruye
    el entorno del barco con ellos al cargarlo (`SENSOR_KEYS` en problems.py, `Lane._set_sensors`).

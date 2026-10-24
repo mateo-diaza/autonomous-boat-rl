@@ -1,5 +1,5 @@
 import { formatSteps } from "@/lib/format";
-import type { CheckpointInfo, ModelRef, RunDetail, SensorId } from "@/lib/types";
+import type { CheckpointInfo, ModelRef, RunDetail } from "@/lib/types";
 
 /** Checkpoints en orden de entrenamiento (los numéricos y "final"); "best" va aparte. */
 export function chronologicalCheckpoints(detail: RunDetail): CheckpointInfo[] {
@@ -23,11 +23,11 @@ export function successAt(detail: RunDetail, checkpoint: CheckpointInfo): number
   return before.at(-1)?.success_rate ?? (checkpoint.steps === 0 ? 0 : null);
 }
 
-/** Etiqueta corta para el HUD: "PPO · 25k pasos". */
+/** Etiqueta corta para el HUD: "Corrientes + sensor · 25k pasos". */
 export function modelLabel(detail: RunDetail | null, checkpointId: string | null): string {
   if (!detail || !checkpointId) return "Sin modelo";
   const checkpoint = detail.checkpoints.find((c) => c.id === checkpointId);
-  return `${detail.algo.toUpperCase()} · ${checkpoint?.label ?? checkpointId}`;
+  return `${detail.label} · ${checkpoint?.label ?? checkpointId}`;
 }
 
 /** Pasos de entrenamiento que representa un checkpoint (para marcarlo en la curva). */
@@ -52,20 +52,8 @@ export function checkpointLabel(checkpointId: string): string {
   return steps === 0 ? "Sin entrenar" : `${formatSteps(steps)} pasos`;
 }
 
-/** "PPO · ppo · 25k pasos" para un modelo cargado, o "Sin modelo". */
+/** "Trampa en U + GPS · Mejor evaluación" para un modelo cargado, o "Sin modelo (recto)". */
 export function describeModel(ref: ModelRef | null): string {
   if (!ref) return "Sin modelo (recto)";
-  const sensors = ref.sensors.map((id) => ` · ${SENSOR_LABELS[id]}`).join("");
-  return `${ref.algo.toUpperCase()} · ${ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}${sensors}`;
-}
-
-/** Nombre legible de cada sensor extra. */
-export const SENSOR_LABELS: Record<SensorId, string> = {
-  current: "sensor de corriente",
-  route: "sensor de ruta",
-};
-
-/** "con sensor de corriente y sensor de ruta" (o "" si no tiene sensores extra). */
-export function describeSensors(sensors: SensorId[]): string {
-  return sensors.length ? `con ${sensors.map((id) => SENSOR_LABELS[id]).join(" y ")}` : "";
+  return `${ref.label || ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}`;
 }

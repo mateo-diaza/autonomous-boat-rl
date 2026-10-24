@@ -17,7 +17,7 @@ from backend.playback import Playback
 from backend.runs import checkpoint_path, read_config
 from backend.schemas import ErrorMsg, ModelRef, WorldInfo
 from training.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
-from training.problems import run_env_kwargs, sensor_kwargs, sensor_names
+from training.problems import model_display_name, run_env_kwargs, sensor_kwargs, sensor_names
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +92,8 @@ async def load_checkpoint(
     config = read_config(models_dir, run_id)
     sensors = sensor_kwargs(run_env_kwargs(config))
     model = await asyncio.to_thread(load_model, path, config["algo"])
-    ref = ModelRef(run_id=run_id, checkpoint_id=checkpoint_id, algo=config["algo"], sensors=sensor_names(sensors))
+    ref = ModelRef(run_id=run_id, checkpoint_id=checkpoint_id, algo=config["algo"], sensors=sensor_names(sensors),
+                   label=model_display_name(config)[0])
     return model, ref, sensors
 
 
