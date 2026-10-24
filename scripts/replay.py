@@ -9,6 +9,7 @@ Uso:
     python -m scripts.replay models/dqn_xxx                 # todos los checkpoints
     python -m scripts.replay models/dqn_xxx --every 2       # uno de cada dos
     python -m scripts.replay models/ppo_demo --upto 25000   # solo el tramo donde aprende
+    python -m scripts.replay models/ppo_demo --max-steps 300 --stochastic
     python -m scripts.replay models/dqn_xxx/best/best_model.zip --episodes 10
 """
 
@@ -56,6 +57,10 @@ def main():
     parser.add_argument("--obstacles", default=None, help="por defecto, los del entrenamiento")
     parser.add_argument("--seed", type=int, default=12345)
     parser.add_argument("--fps", type=int, default=60)
+    parser.add_argument("--max-steps", type=int, default=None,
+                        help="corta cada episodio a N pasos (evita minutos de vueltas del agente sin entrenar)")
+    parser.add_argument("--stochastic", action="store_true",
+                        help="muestrea las acciones de la política en vez de elegir siempre la más probable")
     args = parser.parse_args()
 
     cfg = load_config(args.path)
@@ -73,11 +78,15 @@ def main():
         next_ckpt = False
         for ep in range(args.episodes):
             obs, _ = env.reset(seed=args.seed + ep)
+            if args.stochastic:
+                model.set_random_seed(args.seed + ep)  # muestreo reproducible: mismo checkpoint -> mismas acciones
             done = skip = False
             while not done and not skip:
-                env.overlay_text = f"{label} | ep {ep + 1}/{args.episodes} | metas {wins}"
-                action, _ = model.predict(obs, deterministic=True)
+                env.overlay_text = f"{label}{' (estoc.)' if args.stochastic else ''} | ep {ep + 1}/{args.episodes} | metas {wins}"
+                action, _ = model.predict(obs, deterministic=not args.stochastic)
                 obs, _, terminated, truncated, info = env.step(action)
+                if args.max_steps and not terminated and env.steps >= args.max_steps:
+                    truncated, info["event"] = True, "timeout"
                 done = terminated or truncated
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):

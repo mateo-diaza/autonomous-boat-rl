@@ -34,6 +34,11 @@ python -m scripts.train --algo ppo --steps 500000 --run ppo_baseline --obstacles
 python -m scripts.replay models/dqn_baseline --every 2
 # (ESPACIO salta episodio, N salta checkpoint, ESC sale)
 
+# Solo el tramo donde aprende, cortando episodios a 300 pasos y con acciones muestreadas
+python -m scripts.replay models/ppo_demo --upto 25000 --max-steps 300 --stochastic
+# Nota: con PPO (8 envs x 1024 pasos) la primera actualización llega a los ~8k pasos,
+# así que los checkpoints anteriores son idénticos al de 0k.
+
 # Ver el agente final
 python -m scripts.replay models/dqn_baseline/best/best_model.zip --episodes 10
 
