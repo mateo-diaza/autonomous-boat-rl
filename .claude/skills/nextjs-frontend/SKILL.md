@@ -39,17 +39,21 @@ frontend/src/
 │   ├── page.tsx            # composición de la pantalla principal (server component fino)
 │   └── globals.css         # tokens de diseño (ver ui-design)
 ├── components/
-│   ├── ui/                 # shadcn/ui generados (no editar a mano salvo necesidad)
-│   ├── simulation/         # SimCanvas, SimToolbar, SimHud
-│   ├── brain/              # BrainPanel (rayos + probabilidades de acción)
-│   ├── runs/               # RunSelector, CheckpointSlider
+│   ├── ui/                 # shadcn/ui generados (retocados: slider accesible, outline con borde 3:1)
+│   ├── dashboard/          # Dashboard (compone y es dueño del estado de UI), Widget, ConnectionBadge, ShortcutsDialog
+│   ├── simulation/         # SimStage (canvas + HUD + edición con puntero), SimToolbar
+│   ├── brain/              # BrainPanel (abanico de rayos + preferencia por acción)
+│   ├── voyage/             # VoyagePanel (métricas + bitácora + aria-live)
+│   ├── runs/               # ModelPicker (run + línea del tiempo de checkpoints)
 │   └── charts/             # LearningCurve
-├── hooks/                  # useSimulation, useRuns, useRunCurve
+├── hooks/                  # useSimulation, useRuns, useRunDetail, useHotkeys
 └── lib/
     ├── config.ts
     ├── types.ts            # espejo de server/schemas.py
     ├── api.ts              # fetchers REST tipados
-    └── draw/               # funciones puras de pintado en canvas (drawBoat, drawRays...)
+    ├── format.ts, episodes.ts, checkpoints.ts
+    ├── sim/                # FrameStore (estados fuera de React, interpolación, estela), placement
+    └── draw/               # funciones puras de pintado en canvas (chart.ts, theme.ts, geometry.ts)
 ```
 
 - Un componente por fichero, `PascalCase.tsx`. Hooks `useXxx.ts`. Utilidades `camelCase.ts`.
@@ -98,7 +102,9 @@ El servidor manda estados a 30–60 Hz. **No pongas cada frame en estado de Reac
 
 - Un único hook `useSimulation(url)` encapsula conexión, reconexión con backoff (1s, 2s, 4s… máx 10s),
   envío tipado (`send(cmd: ClientCommand)`) y estado de conexión (`"connecting" | "open" | "closed"`).
-- Cerrar el socket en el cleanup del efecto (cuidado con el doble montaje de StrictMode en dev).
+- Cerrar el socket en el cleanup del efecto. Si aún está en `CONNECTING`, cerrarlo en su `onopen`
+  (cerrarlo antes provoca un aviso en consola con el doble montaje de StrictMode).
+- Al (re)conectar, el servidor empieza sin modelo: el Dashboard reenvía `load_model` cuando `connection` pasa a `open`.
 - El estado de conexión se muestra siempre en la UI (badge) — nunca falles en silencio.
 
 ## 7. Estado y datos
