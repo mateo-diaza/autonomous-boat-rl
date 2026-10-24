@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 - `src/` — entorno Gymnasium (`BoatEnv`) y utilidades
 - `scripts/` — entrenamiento, evaluación y control manual
-- `models/` — checkpoints de los agentes (no versionados)
+- `models/` — checkpoints de los agentes (no versionados). Lo que hay en `models/_archivo/` no se muestra en la web
 - `logs/` — logs de TensorBoard (no versionados)
 
 ## Demo web (backend + frontend)
@@ -35,21 +35,23 @@ Todos los comandos se lanzan desde la raíz del repo con el venv activado.
 # Probar el entorno a mano (← → girar, R reiniciar, ESC salir)
 python -m scripts.play
 
-# Entrenar (checkpoints en models/<run>/checkpoints, mejor modelo en models/<run>/best)
-python -m scripts.train --algo dqn --steps 300000 --run dqn_baseline
-python -m scripts.train --algo ppo --steps 500000 --run ppo_baseline --obstacles 3-8
+# Entrenar (checkpoints en models/<run>/checkpoints, mejor modelo en models/<run>/best).
+# Por defecto: entrenamientos cortos con ~30 checkpoints para ver la progresión del aprendizaje:
+#   PPO: 30k pasos, 1 checkpoint por actualización (cada 1024 pasos)  -> ~1 min
+#   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
+python -m scripts.train --algo ppo --run ppo
+python -m scripts.train --algo dqn --run dqn
+# Todo es configurable: --steps, --ckpt-freq, --n-envs, --n-steps, --n-epochs, --lr, --obstacles
 
 # Ver cómo aprende: reproduce los checkpoints en orden sobre los mismos escenarios
-python -m scripts.replay models/dqn_baseline --every 2
+python -m scripts.replay models/ppo --every 2
 # (ESPACIO salta episodio, N salta checkpoint, ESC sale)
 
 # Solo el tramo donde aprende, cortando episodios a 300 pasos y con acciones muestreadas
-python -m scripts.replay models/ppo_demo --upto 25000 --max-steps 300 --stochastic
-# Nota: con PPO (8 envs x 1024 pasos) la primera actualización llega a los ~8k pasos,
-# así que los checkpoints anteriores son idénticos al de 0k.
+python -m scripts.replay models/ppo --upto 20000 --max-steps 300 --stochastic
 
 # Ver el agente final
-python -m scripts.replay models/dqn_baseline/best/best_model.zip --episodes 10
+python -m scripts.replay models/ppo/best/best_model.zip --episodes 10
 
 # Servidor web (API REST + simulación en vivo por WebSocket); docs en http://localhost:8000/docs
 uvicorn server.main:app --reload --port 8000

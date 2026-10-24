@@ -7,7 +7,10 @@ Estructura de salida:
     models/<run>/final.zip
     logs/<run>_1/                         TensorBoard (tensorboard --logdir logs)
 
-Uso: python -m scripts.train --algo dqn --steps 300000 --obstacles 6
+Uso: python -m scripts.train --algo ppo --obstacles 4-10 --run ppo_progresion
+
+Por defecto se entrena poco y se guardan muchos checkpoints (~30): el agente aprende pronto y lo
+interesante para la demo es ver la progresión, no exprimir los últimos puntos de rendimiento.
 """
 
 import argparse
@@ -33,11 +36,24 @@ def parse_obstacles(s: str):
     return int(s)
 
 
-def build_model(algo: str, env, seed: int, tb_log: str):
+# Valores por defecto por algoritmo (ver la nota del docstring)
+DEFAULTS = {
+    # Elegidos comparando curvas: PPO con actualizaciones pequeñas (4*256 = 1024 pasos), 5 épocas y lr 2e-4
+    # aprende de forma gradual (0 -> 45 -> 90 % en ~16k pasos) y se mantiene estable; con 10 épocas y
+    # lr 3e-4 aprendía a saltos y recaía. DQN llega al ~90 % hacia los 30k y más allá se vuelve inestable.
+    "ppo": {"steps": 30_000, "n_envs": 4, "n_steps": 256, "n_epochs": 5, "lr": 2e-4},
+    "dqn": {"steps": 50_000, "n_envs": 4, "ckpt_freq": 2_500},
+}
+
+
+EVAL_EPISODES = 40  # más episodios = curva de aprendizaje menos ruidosa
+
+
+def build_model(algo: str, env, seed: int, tb_log: str, n_steps: int, lr: float | None, n_epochs: int):
     if algo == "dqn":
         return DQN(
             "MlpPolicy", env,
-            learning_rate=5e-4,
+            learning_rate=lr or 5e-4,
             buffer_size=100_000,
             learning_starts=5_000,
             batch_size=128,
@@ -51,10 +67,10 @@ def build_model(algo: str, env, seed: int, tb_log: str):
         )
     return PPO(
         "MlpPolicy", env,
-        learning_rate=3e-4,
-        n_steps=1024,
+        learning_rate=lr or 3e-4,
+        n_steps=n_steps,
         batch_size=256,
-        n_epochs=10,
+        n_epochs=n_epochs,
         gamma=0.99,
         gae_lambda=0.95,
         ent_coef=0.01,
@@ -65,22 +81,36 @@ def build_model(algo: str, env, seed: int, tb_log: str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--algo", choices=["dqn", "ppo"], default="dqn")
-    parser.add_argument("--steps", type=int, default=300_000)
-    parser.add_argument("--obstacles", default="6", help="'6' fijo o '3-8' aleatorio por episodio")
-    parser.add_argument("--n-envs", type=int, default=None, help="por defecto: 4 (dqn) / 8 (ppo)")
-    parser.add_argument("--ckpt-freq", type=int, default=25_000, help="pasos entre checkpoints")
+    parser.add_argument("--algo", choices=["dqn", "ppo"], default="ppo")
+    parser.add_argument("--steps", type=int, default=None, help="por defecto: 30k (ppo) / 50k (dqn)")
+    parser.add_argument("--obstacles", default="4-10", help="'6' fijo o '4-10' aleatorio por episodio")
+    parser.add_argument("--n-envs", type=int, default=None, help="por defecto: 4")
+    parser.add_argument("--n-steps", type=int, default=None,
+                        help="PPO: pasos por entorno entre actualizaciones (por defecto 256)")
+    parser.add_argument("--ckpt-freq", type=int, default=None,
+                        help="pasos entre checkpoints; por defecto 1 por actualización en PPO (1024) y 2.5k en DQN")
+    parser.add_argument("--n-epochs", type=int, default=None, help="PPO: pasadas por lote de experiencia (5)")
+    parser.add_argument("--lr", type=float, default=None, help="tasa de aprendizaje (por defecto la del algoritmo)")
     parser.add_argument("--run", default=None, help="nombre del experimento")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
-    n_envs = args.n_envs or (4 if args.algo == "dqn" else 8)
+    defaults = DEFAULTS[args.algo]
+    steps = args.steps or defaults["steps"]
+    n_envs = args.n_envs or defaults["n_envs"]
+    n_steps = args.n_steps or defaults.get("n_steps", 0)
+    n_epochs = args.n_epochs or defaults.get("n_epochs", 10)
+    lr = args.lr or defaults.get("lr")
+    # En PPO, un checkpoint por actualización: entre actualizaciones la red no cambia y saldrían repetidos
+    ckpt_freq = args.ckpt_freq or defaults.get("ckpt_freq") or n_envs * n_steps
     obstacles = parse_obstacles(args.obstacles)
     run = args.run or f"{args.algo}_{time.strftime('%Y%m%d_%H%M%S')}"
     run_dir = ROOT / "models" / run
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(json.dumps(
-        {"algo": args.algo, "obstacles": args.obstacles, "steps": args.steps, "seed": args.seed}, indent=2))
+        {"algo": args.algo, "obstacles": args.obstacles, "steps": steps, "seed": args.seed,
+         "n_envs": n_envs, "n_steps": n_steps or None, "ckpt_freq": ckpt_freq,
+         "lr": lr, "n_epochs": n_epochs if args.algo == "ppo" else None}, indent=2))
 
     env_kwargs = dict(n_obstacles=obstacles)
     env = make_vec_env(BoatEnv, n_envs=n_envs, seed=args.seed, env_kwargs=env_kwargs,
@@ -89,17 +119,17 @@ def main():
 
     # Los callbacks cuentan llamadas a step() del VecEnv, no pasos individuales -> dividir por n_envs
     callbacks = [
-        CheckpointCallback(save_freq=max(args.ckpt_freq // n_envs, 1),
+        CheckpointCallback(save_freq=max(ckpt_freq // n_envs, 1),
                            save_path=str(run_dir / "checkpoints"), name_prefix=args.algo),
-        EvalCallback(eval_env, n_eval_episodes=20, eval_freq=max(args.ckpt_freq // n_envs, 1),
+        EvalCallback(eval_env, n_eval_episodes=EVAL_EPISODES, eval_freq=max(ckpt_freq // n_envs, 1),
                      best_model_save_path=str(run_dir / "best"), log_path=str(run_dir / "eval"),
                      deterministic=True),
     ]
 
-    model = build_model(args.algo, env, args.seed, str(ROOT / "logs"))
+    model = build_model(args.algo, env, args.seed, str(ROOT / "logs"), n_steps, lr, n_epochs)
     # Checkpoint en el paso 0: el agente sin entrenar, para que el replay empiece desde cero
     model.save(run_dir / "checkpoints" / f"{args.algo}_0_steps")
-    model.learn(total_timesteps=args.steps, callback=callbacks, tb_log_name=run, progress_bar=False)
+    model.learn(total_timesteps=steps, callback=callbacks, tb_log_name=run, progress_bar=False)
     model.save(run_dir / "final")
     print(f"\nModelos guardados en {run_dir}")
     env.close()
