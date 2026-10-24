@@ -27,6 +27,8 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Bitácora de Barco Autónomo",
   description: "Un barco que aprende a navegar entre rocas con aprendizaje por refuerzo, en vivo.",
+  // Nombre corto bajo el icono al añadir la web a la pantalla de inicio en iOS (Android lo toma del manifest)
+  appleWebApp: { title: "Bitácora" },
 };
 
 export const viewport: Viewport = {
