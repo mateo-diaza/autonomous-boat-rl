@@ -92,3 +92,11 @@ def test_get_state_is_json_serializable_and_tracks_event():
     while not terminated:
         *_, terminated, _, info = env.step(1)
     assert env.get_state()["event"] == info["event"] == "goal"
+
+
+def test_observe_reflects_live_edits():
+    env = BoatEnv(n_obstacles=0)
+    obs, _ = env.reset(seed=0, options={"start": [50, 50], "heading": 0.0})
+    np.testing.assert_array_equal(env.observe(), obs)
+    env.set_obstacles([[60, 50, 3]])
+    assert env.observe()[:12].min() < obs[:12].min()

@@ -179,6 +179,10 @@ class BoatEnv(gym.Env):
         self.goal = _parse_point(goal, "goal")
         self.prev_dist = float(np.linalg.norm(self.goal - self.pos))
 
+    def observe(self) -> np.ndarray:
+        """Observación del estado actual (útil tras editar el escenario sin dar un paso)."""
+        return self._get_obs()
+
     def get_state(self) -> dict:
         """Estado completo para pintar fuera de pygame (frontend web). Solo tipos JSON.
 
