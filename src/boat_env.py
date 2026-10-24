@@ -15,12 +15,12 @@ from gymnasium import spaces
 # --- Parámetros del mundo y la física ---------------------------------------
 WORLD_SIZE = 100.0
 DT = 0.1                 # segundos por paso
-SPEED = 15.0             # unidades / s (constante)
-TURN_ACCEL = 8.0         # rad/s² aplicada por la acción de girar
+SPEED = 10.0             # unidades / s (constante)
+TURN_ACCEL = 5.0         # rad/s² aplicada por la acción de girar
 TURN_DRAG = 3.0          # rozamiento angular (1/s): da inercia al giro
 MAX_OMEGA = 2.5          # rad/s
 BOAT_RADIUS = 1.5
-GOAL_RADIUS = 4.0
+GOAL_RADIUS = 3.0
 
 # --- Sensores ----------------------------------------------------------------
 N_RAYS = 12
@@ -278,6 +278,10 @@ class BoatEnv(gym.Env):
 
         # HUD
         hud = f"paso {self.steps:4d}  retorno {self.episode_return:8.1f}"
+        
+        assert self._font is not None
+        assert self._clock is not None
+        
         s.blit(self._font.render(hud, True, (230, 230, 230)), (10, 10))
         if self.overlay_text:
             txt = self._font.render(self.overlay_text, True, (255, 210, 90))
