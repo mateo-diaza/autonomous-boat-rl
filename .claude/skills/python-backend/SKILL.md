@@ -20,10 +20,11 @@ server/
 ├── models_cache.py  # carga de modelos SB3 con caché
 ├── simulation.py    # SimulationSession: env + modelo + estado; sin nada de red
 ├── routes/
-│   ├── runs.py      # GET /api/runs, GET /api/runs/{run_id}/curve
+│   ├── runs.py      # GET /api/runs, GET /api/runs/{run_id} (checkpoints + curva)
 │   └── sim.py       # WS /ws/sim
-└── tests/
 ```
+Tests del backend en `tests/test_server.py` (junto a los del entorno), con un `models/` temporal
+inyectado sustituyendo la dependencia `get_models_dir` (`app.dependency_overrides`).
 
 Regla: **la lógica no vive en las rutas.** Las rutas validan, delegan y serializan.
 `simulation.py` debe poder usarse y testearse sin FastAPI.
@@ -101,6 +102,8 @@ async def sim_ws(ws: WebSocket):
 ## 6. Configuración y CORS
 
 - CORS solo para `http://localhost:3000` y `http://127.0.0.1:3000`.
+- CORS **no** protege WebSockets: `/ws/sim` comprueba la cabecera `Origin` contra la misma lista.
+- Todo cambio de estado de la sesión debe marcarla como `_dirty`, o el cliente no recibirá el estado nuevo.
 - Rutas con `pathlib.Path`, nunca strings concatenados.
 - Nada de secretos (no hay); si apareciera alguno, va en `.env` ignorado por git.
 
