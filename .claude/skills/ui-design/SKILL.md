@@ -58,8 +58,9 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 | `--border` | filetes decorativos, separadores | `#c9b88f` | 1.7 (solo decorativo) |
 | `--input` / `--border-strong` | bordes de controles (inputs, sliders) | `#8a7a55` | 3.6 (≥ 3:1 UI) |
 | `--primary` | botón principal (fondo tinta, texto papel) | `#1d2b45` / `#f4ecd8` | 12.0 |
-| `--accent` | **barco**, selección, checkpoint activo | bermellón `#b3412e` | 4.8 |
-| `--accent-text` | texto en color acento | `#9c3524` | 6.1 |
+| `--vermilion` | **barco**, selección, checkpoint activo | bermellón `#b3412e` | 4.8 |
+| `--vermilion-text` | texto en bermellón | `#9c3524` | 6.1 |
+| `--accent` | (shadcn) fondo hover/selección suave — **no** es el color de marca | `#e6dcc0` | — |
 | `--success` | meta / éxito | verde `#276b4d` | 5.4 |
 | `--danger` | choque / peligro (magenta de carta: así se marcan los peligros) | `#8e1f4f` | > 7 |
 | `--warning` | timeout / aviso | ocre `#8f5a14` | 4.9 |
@@ -67,8 +68,11 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 | `--water-grid` | retícula / graticule | `#b8cbc4` | — |
 | `--rock` / `--rock-stroke` | obstáculos | `#a8957a` / `#5c4a33` | 6.8 (trazo s/ agua) |
 
+- Los tokens viven en `frontend/src/app/globals.css` (fuente única; el canvas los lee con `getComputedStyle`).
 - Mapea a las variables de shadcn/ui (`--primary`, `--card`, `--ring`…) para que los componentes hereden el tema.
-- **Un acento** (bermellón) reservado al barco y a lo seleccionado. Los semánticos (verde, magenta, ocre)
+  Ojo: en shadcn `--accent` es el fondo de hover; el color de marca es `--vermilion` (clases `bg-vermilion`, `text-vermilion-text`).
+- Cartelas: clase `.cartouche` (doble filete) y `.cartouche-title` (serif en versalitas).
+- **Un color de marca** (bermellón, `--vermilion`) reservado al barco y a lo seleccionado. Los semánticos (verde, magenta, ocre)
   solo para su significado.
 - Anillo de foco: `--ring: #1d2b45` con offset de 2px sobre papel.
 - Tema oscuro ("carta nocturna", tinta clara sobre azul noche) **opcional y posterior**: solo si el
@@ -104,7 +108,7 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 - **Obstáculos**: rocas con relleno `--rock`, trazo `--rock-stroke` 2px y, opcionalmente, una cruz
   o punteado interior (símbolo cartográfico de roca/peligro).
 - **Meta**: boya — círculo `--success` con anillo exterior fino y pulso lento (sin pulso con reduced motion).
-- **Barco**: casco puntiagudo en `--accent` (bermellón) con contorno tinta 1.5px. Es el único elemento
+- **Barco**: casco puntiagudo en `--vermilion` con contorno tinta 1.5px. Es el único elemento
   bermellón del canvas, así el ojo lo encuentra al instante.
 - **Estela**: línea discontinua (3–3) en tinta al 60 %, como un rumbo trazado a lápiz; se desvanece con la edad.
 - **Rayos lidar**: líneas de tinta finas (0.8px, 70 %); los cercanos (< 40 % del alcance) pasan a
@@ -116,11 +120,11 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 ## 7. Visualización de datos
 
 - Curva de aprendizaje: eje X = pasos de entrenamiento ("25k"), eje Y = tasa de éxito (0–100 %).
-  Línea tinta 2px; área bajo la curva con trama de líneas finas o `--accent` al 10 %. Nunca mezclar escalas sin aviso.
+  Línea tinta 2px; área bajo la curva con trama de líneas finas o `--vermilion` al 10 %. Nunca mezclar escalas sin aviso.
 - Marcador vertical discontinuo (tinta) en el checkpoint seleccionado, sincronizado con la línea de tiempo.
 - Ejes y rejilla con `--border`, etiquetas en Plex Mono `--muted-foreground`. Sin 3D ni sombras.
 - Panel cerebro: barras horizontales para P(babor/izq), P(avante/recto), P(estribor/der); la elegida en
-  `--accent`, el resto en tinta al 35 %. Rayos como abanico en miniatura.
+  `--vermilion`, el resto en tinta al 35 %. Rayos como abanico en miniatura.
 - Números siempre con unidad y formato español: "67 pasos", "95 %", "+163,3".
 
 ## 8. Estados (todo componente con datos los tiene)

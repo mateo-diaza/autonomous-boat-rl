@@ -9,8 +9,24 @@ Lee también `clean-code`, `ui-design` y `web-accessibility`: las tres aplican a
 
 ## 1. Stack y configuración
 
-- Next.js con **App Router**, TypeScript `strict`, Tailwind CSS, shadcn/ui, Recharts, lucide-react (iconos).
+- Next.js **16.4** con **App Router**, React 19, TypeScript `strict`, Tailwind CSS 4, shadcn/ui 4 (base **Radix**,
+  estilo `radix-nova`), Recharts 3, lucide-react (iconos).
 - Gestor: **pnpm**. Comprueba versiones reales en `package.json` antes de asumir APIs.
+- **Next 16 cambia APIs**: ante la duda, lee `frontend/node_modules/next/dist/docs/` (lo pide `frontend/AGENTS.md`).
+
+### Particularidades de esta versión (verificadas en la documentación local)
+- `cacheComponents: true` está activo:
+  - **Prohibido** `Date.now()`, `new Date()`, `Math.random()`, `crypto.randomUUID()` en el cuerpo del render
+    (rompe el build). Úsalos en efectos o manejadores de eventos.
+  - **Prohibido** `export const dynamic`, `revalidate`, `fetchCache` o `runtime` en rutas.
+  - Las rutas ocultas se mantienen montadas y sus efectos se limpian y re-ejecutan: todo `useEffect` con
+    WebSocket/timers **debe** limpiar en el cleanup.
+  - `useSearchParams()` necesita `<Suspense>`.
+- `themeColor`/`colorScheme` van en `export const viewport`, no en `metadata`.
+- `LayoutProps<"/">` / `PageProps<"/">` son globales generados: `pnpm typecheck` ejecuta `next typegen` antes de `tsc`.
+- `next lint` ya no existe: `pnpm lint` ejecuta el CLI de ESLint (config plana `eslint.config.mjs`).
+- `cn()` viene del paquete `cn` (de shadcn, sustituye a clsx + tailwind-merge): `import { cn } from "@/lib/utils"`.
+- `<Toaster theme="light" />` fijo: no hay ThemeProvider de next-themes.
 - Toda la app es una demo local: no hay auth, ni base de datos, ni SSR de datos del backend.
 - URL del backend en `NEXT_PUBLIC_API_URL` (por defecto `http://localhost:8000`) leída en un único módulo `lib/config.ts`.
 
@@ -102,7 +118,7 @@ El servidor manda estados a 30–60 Hz. **No pongas cada frame en estado de Reac
 
 ## 9. Calidad
 
-- `pnpm lint` y `pnpm build` sin errores antes de commitear.
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` sin errores antes de commitear.
 - Sin `any`, sin `// @ts-ignore` (si es inevitable, `@ts-expect-error` con motivo).
 - Componentes < ~150 líneas; si crecen, extrae subcomponentes o hooks.
 - Props tipadas con `type XxxProps = {...}`; nada de props que no se usan.
