@@ -1,122 +1,157 @@
 ---
 name: ui-design
-description: Sistema de diseño visual y guía de diseño de páginas para la demo web de autonomous-boat-rl - layout del dashboard, tokens de color, tipografía, espaciado, jerarquía visual, visualización de datos, estados de carga/error/vacío, animación y microcopy. Úsala siempre que diseñes o maquetes una pantalla o componente, elijas colores o tipografías, pintes en el canvas de simulación, crees gráficas o escribas textos de la interfaz.
+description: Sistema de diseño visual "Carta náutica" y guía de diseño de páginas para la demo web de autonomous-boat-rl - layout del dashboard, tokens de color, tipografía, espaciado, jerarquía visual, cómo pintar el canvas como una carta náutica, visualización de datos, estados de carga/error/vacío, animación y microcopy. Úsala siempre que diseñes o maquetes una pantalla o componente, elijas colores o tipografías, pintes en el canvas de simulación, crees gráficas o escribas textos de la interfaz.
 ---
 
-# Diseño de interfaz — demo del barco autónomo
+# Diseño de interfaz — estilo "Carta náutica"
 
 Objetivo: que en 5 segundos el público entienda **qué ve** (un barco que aprende) y en 30 segundos
-**cómo aprende**. Estética: panel técnico moderno, oscuro, "centro de control marítimo". Sobrio, no recargado.
+**cómo aprende**.
+
+Estética elegida: **carta náutica / cuaderno de bitácora**. Papel crema, tinta azul marino, títulos con
+serifa, detalles cartográficos (rosa de los vientos, retícula, sondas, cartelas). Editorial y con
+identidad, pero **los datos se leen con la claridad de un dashboard moderno**: lo vintage está en la
+piel, no en la usabilidad.
 
 ## 1. Principios
 
 1. **La simulación es la protagonista.** Ocupa el mayor espacio y el centro visual. Todo lo demás la explica.
 2. **Jerarquía clara**: 1 cosa principal (canvas), 2–3 secundarias (cerebro, curva, controles), el resto terciario.
-3. **Menos, pero mejor**: cada elemento en pantalla responde a una pregunta del público. Si no, fuera.
+3. **Ornamento con medida**: un detalle cartográfico por zona (rosa de los vientos en el canvas, doble
+   filete en las cartelas). Si un adorno compite con un dato, se quita el adorno.
 4. **Consistencia**: mismos tokens, radios, espaciados e iconos en toda la app.
 5. **Legible a distancia**: es una demo proyectada. Texto mínimo 14px, métricas clave grandes (≥ 28px).
+   El tema claro pierde saturación en proyector: por eso los colores de texto están oscurecidos (ver §3).
 
 ## 2. Layout (escritorio ≥ 1280px)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ Header: título · selector de problema/run · estado conexión          │
+│ Cabecera: título (serif, cursiva) · selector problema/run · conexión │
 ├───────────────────────────────────────────────┬──────────────────────┤
-│                                               │  Panel "Cerebro"     │
-│              CANVAS (cuadrado)                │  rayos + prob. acción│
-│            con HUD superpuesto                ├──────────────────────┤
-│                                               │  Métricas episodio   │
+│                                               │  Cartela "Cerebro"   │
+│        CARTA (canvas cuadrado)                │  rayos + prob. acción│
+│   rosa de los vientos · retícula · HUD        ├──────────────────────┤
+│                                               │  Cartela "Episodio"  │
 ├───────────────────────────────────────────────┤  (pasos, retorno...) │
-│ Toolbar: ▶ ⏸ ⏭  velocidad · herramientas mapa ├──────────────────────┤
-├───────────────────────────────────────────────┤  Curva aprendizaje   │
-│ Slider de checkpoint (línea temporal)          │  + marcador          │
+│ Barra: ▶ ⏸ ⏭  velocidad · herramientas mapa   ├──────────────────────┤
+├───────────────────────────────────────────────┤  Cartela             │
+│ Línea del tiempo de checkpoints (escala náutica)│  "Aprendizaje"      │
 └───────────────────────────────────────────────┴──────────────────────┘
 ```
 
 - Grid: canvas ~2/3, panel lateral ~1/3. Gutter 16–24px. Máx ancho 1600px centrado.
 - < 1024px: una columna (canvas arriba, paneles debajo). Sin scroll horizontal nunca.
-- El slider de checkpoint es la "línea del tiempo del aprendizaje": ancho completo, con marcas en cada checkpoint
-  y la tasa de éxito coloreando la pista si es posible.
+- La línea de checkpoints se dibuja como la **escala gráfica de una carta** (barra con tramos alternos
+  tinta/papel y marcas "0k · 10k · 25k…"); la tasa de éxito puede teñir cada tramo.
 
-## 3. Tokens de color (definidos como variables CSS en globals.css, tema oscuro por defecto)
+## 3. Tokens de color (variables CSS en `globals.css`, tema claro por defecto)
 
-| Token | Uso | Valor orientativo |
+Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥ 4.5:1).
+
+| Token | Uso | Valor | Contraste |
+|---|---|---|---|
+| `--background` | papel (fondo app) | `#f4ecd8` | — |
+| `--card` | cartelas / paneles | `#fbf6e9` | — |
+| `--foreground` | tinta (texto principal, trazos) | `#1d2b45` | 12.0 |
+| `--muted-foreground` | texto secundario, ejes | `#5e5844` | 6.0 |
+| `--border` | filetes decorativos, separadores | `#c9b88f` | 1.7 (solo decorativo) |
+| `--input` / `--border-strong` | bordes de controles (inputs, sliders) | `#8a7a55` | 3.6 (≥ 3:1 UI) |
+| `--primary` | botón principal (fondo tinta, texto papel) | `#1d2b45` / `#f4ecd8` | 12.0 |
+| `--accent` | **barco**, selección, checkpoint activo | bermellón `#b3412e` | 4.8 |
+| `--accent-text` | texto en color acento | `#9c3524` | 6.1 |
+| `--success` | meta / éxito | verde `#276b4d` | 5.4 |
+| `--danger` | choque / peligro (magenta de carta: así se marcan los peligros) | `#8e1f4f` | > 7 |
+| `--warning` | timeout / aviso | ocre `#8f5a14` | 4.9 |
+| `--water` | agua del canvas | `#dfe9e4` | — |
+| `--water-grid` | retícula / graticule | `#b8cbc4` | — |
+| `--rock` / `--rock-stroke` | obstáculos | `#a8957a` / `#5c4a33` | 6.8 (trazo s/ agua) |
+
+- Mapea a las variables de shadcn/ui (`--primary`, `--card`, `--ring`…) para que los componentes hereden el tema.
+- **Un acento** (bermellón) reservado al barco y a lo seleccionado. Los semánticos (verde, magenta, ocre)
+  solo para su significado.
+- Anillo de foco: `--ring: #1d2b45` con offset de 2px sobre papel.
+- Tema oscuro ("carta nocturna", tinta clara sobre azul noche) **opcional y posterior**: solo si el
+  proyector del evento apaga el tema claro. Si se hace, definir sus tokens y volver a medir contraste.
+
+## 4. Tipografía (con `next/font/google`)
+
+| Rol | Fuente | Uso |
 |---|---|---|
-| `--background` | fondo app | slate muy oscuro `#0b1220` |
-| `--card` | paneles | `#111a2e` |
-| `--border` | bordes sutiles | `#1f2a44` |
-| `--foreground` | texto principal | `#e6edf7` |
-| `--muted-foreground` | texto secundario | `#93a4c3` |
-| `--primary` | acción principal, barco | cian `#22d3ee` |
-| `--water` | agua del canvas | azul `#0e3a5c` → `#145a86` (gradiente sutil) |
-| `--success` | meta / éxito | verde `#34d399` |
-| `--danger` | choque / peligro | coral `#f87171` |
-| `--warning` | timeout / aviso | ámbar `#fbbf24` |
-| `--rock` | obstáculos | `#6b5e50` con borde `#3f362d` |
+| Títulos / cartelas | **Source Serif 4** (cursiva para el título principal) | h1–h3, títulos de panel, overlay de fin de episodio |
+| Interfaz y texto | **IBM Plex Sans** | botones, etiquetas, párrafos, tooltips |
+| Números y datos | **IBM Plex Mono** con `tabular-nums` | métricas, ejes, HUD, línea de checkpoints |
 
-- Mapea a las variables que usa shadcn/ui (`--primary`, `--card`...) para que los componentes hereden el tema.
-- Un acento principal (cian). Los colores semánticos solo para su significado, nunca decorativos.
-- Verifica contraste (ver `web-accessibility`); si se ofrece tema claro, define sus tokens también.
-
-## 4. Tipografía
-
-- Sans: **Inter** o **Geist** (vía `next/font`). Mono para números: **Geist Mono / JetBrains Mono**.
-- Cifras con `font-variant-numeric: tabular-nums` (`tabular-nums` en Tailwind) para que no "bailen".
-- Escala: 12 (caption) · 14 (cuerpo) · 16 · 20 (títulos de panel) · 28–36 (métricas clave) · 40 (h1).
-- Máx 2 pesos por pantalla (400 y 600). Títulos de panel en mayúsculas pequeñas con tracking opcional.
+- La serifa da el carácter; la sans garantiza legibilidad en controles. **Nunca** serifa en textos < 14px.
+- Escala: 12 (caption) · 14 (cuerpo) · 16 · 20 (títulos de cartela) · 28–36 (métricas clave) · 40 (h1).
+- Pesos: 400 y 600. Títulos de cartela en versalitas (`font-variant: small-caps`) con tracking ligero.
 
 ## 5. Espaciado, forma y profundidad
 
 - Escala de 4px: 4, 8, 12, 16, 24, 32, 48.
-- Radio: 12px paneles, 8px controles, completo en badges.
-- Profundidad con bordes sutiles y un ligero cambio de fondo; sombras mínimas. Glassmorphism solo en el HUD sobre el canvas.
+- **Radios pequeños**: 2–4px (papel impreso, no burbujas). Badges: 2px, no pastillas.
+- **Sin sombras**. La profundidad se marca con:
+  - Cartelas con **doble filete** (borde exterior 1px `--foreground` + interior 1px `--border` separados 3px).
+  - Fondo `--card` ligeramente más claro que el papel.
+- Textura de papel opcional y muy sutil (ruido < 3 % de opacidad); desactivable y nunca bajo texto pequeño.
 
-## 6. Canvas de simulación
+## 6. Canvas = carta náutica
 
-- Agua: gradiente + textura/olas muy sutil (desactivar con reduced motion).
-- Barco: forma reconocible (casco puntiagudo), color `--primary`, con borde oscuro para destacar.
-- Estela: línea degradada que se desvanece con la edad.
-- Rayos lidar: finos, semitransparentes; color de seguro (cian/verde) a peligro (ámbar/coral) según cercanía,
-  con punto de impacto. Toggle para ocultarlos.
-- Meta: círculo verde con pulso suave. Obstáculos: rocas con relleno y borde, ligera sombra.
-- Fin de episodio: overlay breve (≤ 1 s) con icono + texto ("✓ Meta en 67 pasos").
-- Rejilla tenue opcional para dar sensación de escala.
+- **Agua**: `--water` plano. **Retícula** de latitud/longitud con `--water-grid` cada 10 unidades del mundo,
+  con números pequeños en el margen (Plex Mono 10px, `--muted-foreground`) como una graticule.
+- **Rosa de los vientos** en una esquina (trazo tinta, 1px), con la N marcada. Decorativa: `aria-hidden`.
+- **Sondas** (opcional): números pequeños dispersos en el agua (profundidades), muy tenues, solo decoración.
+- **Obstáculos**: rocas con relleno `--rock`, trazo `--rock-stroke` 2px y, opcionalmente, una cruz
+  o punteado interior (símbolo cartográfico de roca/peligro).
+- **Meta**: boya — círculo `--success` con anillo exterior fino y pulso lento (sin pulso con reduced motion).
+- **Barco**: casco puntiagudo en `--accent` (bermellón) con contorno tinta 1.5px. Es el único elemento
+  bermellón del canvas, así el ojo lo encuentra al instante.
+- **Estela**: línea discontinua (3–3) en tinta al 60 %, como un rumbo trazado a lápiz; se desvanece con la edad.
+- **Rayos lidar**: líneas de tinta finas (0.8px, 70 %); los cercanos (< 40 % del alcance) pasan a
+  `--danger` y más gruesos (1.5px), con punto de impacto. Toggle para ocultarlos.
+- **HUD** sobre el canvas: cartela pequeña de papel (`--card` al 92 %) con doble filete, esquina superior.
+- **Fin de episodio**: cartela centrada ≤ 1 s, serifa cursiva + icono: "✓ Arribada en 67 pasos",
+  "✕ Encallado", "⏱ Sin rumbo (tiempo agotado)".
 
 ## 7. Visualización de datos
 
-- Curva de aprendizaje: eje X = pasos de entrenamiento (formato "25k"), eje Y = tasa de éxito (0–100 %).
-  Línea principal sólida; recompensa media en un segundo eje o gráfica aparte, nunca mezclar escalas sin aviso.
-- Marcador vertical en el checkpoint seleccionado, sincronizado con el slider.
-- Ejes y rejilla discretos (`--border`), etiquetas en `--muted-foreground`. Sin efectos 3D ni sombras.
-- Panel cerebro: barras horizontales para P(izq), P(recto), P(der) con la elegida resaltada; rayos como
-  un abanico en miniatura o barras radiales.
-- Números siempre con unidad y formato legible: "67 pasos", "95 %", "+163,3".
+- Curva de aprendizaje: eje X = pasos de entrenamiento ("25k"), eje Y = tasa de éxito (0–100 %).
+  Línea tinta 2px; área bajo la curva con trama de líneas finas o `--accent` al 10 %. Nunca mezclar escalas sin aviso.
+- Marcador vertical discontinuo (tinta) en el checkpoint seleccionado, sincronizado con la línea de tiempo.
+- Ejes y rejilla con `--border`, etiquetas en Plex Mono `--muted-foreground`. Sin 3D ni sombras.
+- Panel cerebro: barras horizontales para P(babor/izq), P(avante/recto), P(estribor/der); la elegida en
+  `--accent`, el resto en tinta al 35 %. Rayos como abanico en miniatura.
+- Números siempre con unidad y formato español: "67 pasos", "95 %", "+163,3".
 
 ## 8. Estados (todo componente con datos los tiene)
 
 | Estado | Diseño |
 |---|---|
-| Cargando | Skeleton con la forma del contenido (no spinners a pantalla completa) |
-| Vacío | Mensaje + acción: "No hay runs entrenados. Ejecuta `python -m scripts.train`" |
-| Error | Banner `--danger` con causa y acción ("Reintentar") |
-| Desconectado | Badge en el header + canvas atenuado + "Reconectando…" |
+| Cargando | Skeleton color `--border` al 40 % con la forma del contenido |
+| Vacío | Cartela + acción: "Aún no hay travesías registradas. Entrena un modelo con `python -m scripts.train`" |
+| Error | Banda `--danger` (borde izquierdo 3px, radio 0) con causa y acción ("Reintentar") |
+| Desconectado | Badge en cabecera + carta atenuada (velo papel 50 %) + "Reconectando con el servidor…" |
 
 ## 9. Movimiento
 
 - Transiciones de UI 150–250 ms, `ease-out`. Nada de rebotes.
-- La animación tiene un propósito (feedback, continuidad), nunca decoración que distraiga del canvas.
-- Respeta `prefers-reduced-motion`.
+- La animación tiene un propósito (feedback, continuidad); el pulso de la boya es el único adorno animado.
+- Respeta `prefers-reduced-motion` (sin pulso, sin desvanecimientos).
 
-## 10. Microcopy (español)
+## 10. Microcopy (español, guiño náutico sin perder claridad)
 
-- Tono directo y didáctico. Verbos en botones: "Reproducir", "Nuevo escenario", "Añadir roca".
-- Explica el RL en lenguaje llano con tooltips: "Checkpoint: el modelo guardado tras N pasos de entrenamiento".
-- Títulos de panel cortos: "Cerebro del agente", "Aprendizaje", "Episodio".
+- Vocabulario náutico **solo donde se entiende sin glosario**: "Arribada" (meta), "Encallado" (choque),
+  "Travesía" (episodio), "Bitácora" (registro de episodios). Para acciones, verbos llanos:
+  "Reproducir", "Nuevo escenario", "Añadir roca".
+- La primera vez que aparece un término de RL, se explica con tooltip:
+  "Checkpoint: el modelo guardado tras N pasos de entrenamiento".
+- Títulos de cartela cortos: "Cerebro del agente", "Travesía", "Aprendizaje".
 
 ## 11. Checklist visual
 
-- [ ] El canvas domina la pantalla y se entiende sin explicación.
-- [ ] Un solo color de acento; colores semánticos coherentes en toda la app.
-- [ ] Números tabulares y con unidad.
+- [ ] La carta domina la pantalla y se entiende sin explicación.
+- [ ] El barco es lo único en bermellón dentro del canvas.
+- [ ] Serifa solo en títulos (≥ 16px); datos en Plex Mono tabular con unidad.
+- [ ] Ningún adorno compite con un dato.
 - [ ] Estados de carga, vacío, error y desconexión diseñados.
-- [ ] Se ve bien en 1920×1080 (proyector) y en 1366×768.
+- [ ] Se ve bien en 1920×1080 (proyector) y en 1366×768; contraste revisado tras cualquier cambio de color.
