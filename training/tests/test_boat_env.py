@@ -162,3 +162,24 @@ def test_current_sensor_reports_drift_in_boat_frame():
     obs, _ = env.reset(seed=0, options={"start": [50, 50], "heading": 0.0, "current": [0.0, 8.0]})
     assert obs[-2] == pytest.approx(0.0, abs=1e-6) and obs[-1] == pytest.approx(0.8)
     assert np.all(np.abs(obs) <= 1.0)
+
+
+def test_u_trap_blocks_the_straight_path_and_leaves_start_and_goal_free():
+    env = BoatEnv(n_obstacles=0, u_trap=True)
+    for seed in range(20):
+        env.reset(seed=seed)
+        assert len(env.obs_radii) > 10
+        # Ningún obstáculo encima de la salida o de la meta
+        dist_start = np.linalg.norm(env.obs_centers - env.pos, axis=1) - env.obs_radii
+        dist_goal = np.linalg.norm(env.obs_centers - env.goal, axis=1) - env.obs_radii
+        assert dist_start.min() > 5 and dist_goal.min() > 5
+        # La línea recta salida -> meta atraviesa la U
+        line = env.pos + np.linspace(0, 1, 200)[:, None] * (env.goal - env.pos)
+        hits = np.linalg.norm(line[:, None, :] - env.obs_centers[None], axis=2) < env.obs_radii[None]
+        assert hits.any()
+
+
+def test_u_trap_is_deterministic_given_the_seed():
+    a, b = BoatEnv(n_obstacles=(0, 3), u_trap=True), BoatEnv(n_obstacles=(0, 3), u_trap=True)
+    a.reset(seed=11), b.reset(seed=11)
+    np.testing.assert_array_equal(a.obs_centers, b.obs_centers)

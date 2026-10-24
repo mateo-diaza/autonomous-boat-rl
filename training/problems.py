@@ -63,6 +63,15 @@ PROBLEMS: dict[str, Problem] = {
             ),
             env_kwargs={**_BASE_ENV, "current_speed": (5.0, 8.0)},
         ),
+        Problem(
+            id="u_trap",
+            title="Trampa en U",
+            description=(
+                "Un arrecife en U abierto hacia el barco tapa el camino recto. Ir directo a la boya lleva a un "
+                "callejón: un mínimo local de la recompensa."
+            ),
+            env_kwargs={"n_obstacles": (0, 3), "u_trap": True},
+        ),
     ]
 }
 

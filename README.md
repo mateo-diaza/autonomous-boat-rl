@@ -66,7 +66,7 @@ python -m training.play
 #   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
 python -m training.train --algo ppo --run ppo
 python -m training.train --algo dqn --run dqn
-# Variantes de dificultad (training/problems.py): --problem base | sparse | current
+# Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap
 python -m training.train --algo ppo --problem sparse --run ppo_sparse
 python -m training.train --problem current --steps 50000 --run ppo_current                            # sin sensor
 python -m training.train --problem current --steps 50000 --observe-current --run ppo_current_sensor   # con sensor

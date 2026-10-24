@@ -32,6 +32,13 @@ PROGRESS_K = 1.0         # por unidad de distancia ganada hacia la meta
 STEP_PENALTY = 0.01
 REWARD_MODES = ("shaped", "sparse")
 
+# --- Trampa en U ----------------------------------------------------------------
+U_ROCK_RADIUS = 2.5      # rocas pequeñas y solapadas: forman una pared sin huecos
+U_SPACING = 3.5          # < 2 * radio, así se solapan
+U_WIDTH = 32.0           # anchura del fondo de la U
+U_ARM = 18.0             # largo máximo de los brazos (hacia la salida)
+U_POSITION = 0.6         # el fondo está al 60 % del camino salida -> boya
+
 # --- Corrientes -----------------------------------------------------------------
 CURRENT_NORM = SPEED     # el sensor mide la corriente en "velocidades del barco": cabe en [-1, 1] sin recortes
 CRASH_REWARD = -100.0
@@ -87,6 +94,7 @@ class BoatEnv(gym.Env):
         reward_mode: str = "shaped",
         current_speed: tuple[float, float] = (0.0, 0.0),
         observe_current: bool = False,
+        u_trap: bool = False,
     ):
         """
         `reward_mode`: "shaped" (progreso hacia la meta en cada paso) o "sparse" (solo ±100 al terminar).
@@ -94,6 +102,8 @@ class BoatEnv(gym.Env):
             (0, 0) = sin corriente.
         `observe_current`: el barco tiene un sensor de corriente (+2 dimensiones de observación). Cambia la forma
             de la observación: un modelo solo funciona con el mismo valor con el que se entrenó.
+        `u_trap`: entre la salida y la meta hay una barrera en U abierta hacia el barco. Ir en línea recta
+            lleva al fondo de la U: un mínimo local de la recompensa por progreso.
         """
         super().__init__()
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -103,6 +113,7 @@ class BoatEnv(gym.Env):
         self.reward_mode = reward_mode
         self.current_speed = (float(current_speed[0]), float(current_speed[1]))
         self.observe_current = observe_current
+        self.u_trap = u_trap
         self.render_mode = render_mode
         self.current = np.zeros(2)
 
@@ -155,7 +166,8 @@ class BoatEnv(gym.Env):
         if "obstacles" in options:
             self.set_obstacles(options["obstacles"])
         else:
-            self._random_obstacles(n_obs)
+            # La U no consume azar (se deduce de salida y meta): sin ella, el mar es el de siempre
+            self._random_obstacles(n_obs, fixed=self._u_trap_rocks() if self.u_trap else [])
 
         to_goal = self.goal - self.pos
         if "heading" in options:
@@ -178,12 +190,14 @@ class BoatEnv(gym.Env):
             self.render()
         return obs, {}
 
-    def _random_obstacles(self, n_obs: int) -> None:
-        """Obstáculos sin solaparse entre sí ni tapar la salida o la meta (muestreo por rechazo)."""
+    def _random_obstacles(self, n_obs: int, fixed: list[tuple[np.ndarray, float]] = ()) -> None:
+        """`fixed` + `n_obs` obstáculos aleatorios que no se solapan ni tapan la salida o la meta (rechazo)."""
         rng = self.np_random
-        centers, radii = [], []
+        centers = [c for c, _ in fixed]
+        radii = [r for _, r in fixed]
+        target = len(fixed) + n_obs
         attempts = 0
-        while len(centers) < n_obs and attempts < 1000:
+        while len(centers) < target and attempts < 1000:
             attempts += 1
             r = rng.uniform(*OBSTACLE_RADIUS)
             c = rng.uniform(r, WORLD_SIZE - r, size=2)
@@ -197,6 +211,21 @@ class BoatEnv(gym.Env):
             radii.append(r)
         self.obs_centers = np.array(centers, dtype=np.float64).reshape(-1, 2)
         self.obs_radii = np.array(radii, dtype=np.float64)
+
+    def _u_trap_rocks(self) -> list[tuple[np.ndarray, float]]:
+        """Barrera en U entre salida y meta, abierta hacia la salida (geometría determinista)."""
+        to_goal = self.goal - self.pos
+        dist = float(np.linalg.norm(to_goal))
+        d = to_goal / dist                    # hacia la meta
+        n = np.array([-d[1], d[0]])           # perpendicular
+        bottom = self.pos + d * dist * U_POSITION
+        arm = min(U_ARM, dist * U_POSITION - 12.0)  # la punta de los brazos queda lejos de la salida
+        half = U_WIDTH / 2
+        points = [bottom + n * t for t in np.arange(-half, half + 1e-6, U_SPACING)]
+        for side in (-1.0, 1.0):
+            points += [bottom + n * side * half - d * s for s in np.arange(U_SPACING, arm + 1e-6, U_SPACING)]
+        # Fuera del mapa sobran: el borde ya es una pared
+        return [(p, U_ROCK_RADIUS) for p in points if np.all((p >= 0) & (p <= WORLD_SIZE))]
 
     # ------------------------------------------------- Edición del escenario en vivo
     def set_obstacles(self, obstacles) -> None:
