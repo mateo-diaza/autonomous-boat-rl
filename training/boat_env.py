@@ -30,7 +30,8 @@ RAY_RANGE = 30.0
 # --- Recompensa --------------------------------------------------------------
 PROGRESS_K = 1.0         # por unidad de distancia ganada hacia la meta
 STEP_PENALTY = 0.01
-REWARD_MODES = ("shaped", "sparse")
+REWARD_MODES = ("shaped", "sparse", "path")
+PATH_GRID = 1.0          # resolución (unidades) de la cuadrícula para la distancia por ruta navegable
 
 # --- Trampa en U ----------------------------------------------------------------
 U_ROCK_RADIUS = 2.5      # rocas pequeñas y solapadas: forman una pared sin huecos
@@ -95,15 +96,19 @@ class BoatEnv(gym.Env):
         current_speed: tuple[float, float] = (0.0, 0.0),
         observe_current: bool = False,
         u_trap: bool = False,
+        observe_route: bool = False,
     ):
         """
-        `reward_mode`: "shaped" (progreso hacia la meta en cada paso) o "sparse" (solo ±100 al terminar).
+        `reward_mode`: "shaped" (progreso hacia la meta en línea recta), "sparse" (solo ±100 al terminar) o
+            "path" (progreso por el camino navegable más corto, que rodea los obstáculos).
         `current_speed`: rango (u/s) de la fuerza de la corriente; en cada episodio se sortea fuerza y dirección.
             (0, 0) = sin corriente.
         `observe_current`: el barco tiene un sensor de corriente (+2 dimensiones de observación). Cambia la forma
             de la observación: un modelo solo funciona con el mismo valor con el que se entrenó.
         `u_trap`: entre la salida y la meta hay una barrera en U abierta hacia el barco. Ir en línea recta
             lleva al fondo de la U: un mínimo local de la recompensa por progreso.
+        `observe_route`: sensor de ruta, como un GPS náutico: dirección del camino navegable más corto hacia
+            la meta (+2 dimensiones). Igual que el sensor de corriente, cambia la forma de la observación.
         """
         super().__init__()
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -114,11 +119,12 @@ class BoatEnv(gym.Env):
         self.current_speed = (float(current_speed[0]), float(current_speed[1]))
         self.observe_current = observe_current
         self.u_trap = u_trap
+        self.observe_route = observe_route
         self.render_mode = render_mode
         self.current = np.zeros(2)
 
         self.action_space = spaces.Discrete(3)
-        n_obs = N_RAYS + 5 + (2 if observe_current else 0)
+        n_obs = N_RAYS + 5 + (2 if observe_current else 0) + (2 if observe_route else 0)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(n_obs,), dtype=np.float32)
 
         # Ángulos de los rayos relativos al rumbo del barco: de -90° (izq) a +90° (der)
@@ -164,7 +170,7 @@ class BoatEnv(gym.Env):
                     break
 
         if "obstacles" in options:
-            self.set_obstacles(options["obstacles"])
+            self._assign_obstacles(options["obstacles"])
         else:
             # La U no consume azar (se deduce de salida y meta): sin ella, el mar es el de siempre
             self._random_obstacles(n_obs, fixed=self._u_trap_rocks() if self.u_trap else [])
@@ -181,6 +187,7 @@ class BoatEnv(gym.Env):
 
         self.steps = 0
         self.prev_dist = float(np.linalg.norm(to_goal))
+        self._refresh_path()
         self.episode_return = 0.0
         self.last_event = None
         self.trail = [self.pos.copy()]
@@ -229,7 +236,12 @@ class BoatEnv(gym.Env):
 
     # ------------------------------------------------- Edición del escenario en vivo
     def set_obstacles(self, obstacles) -> None:
-        """Sustituye los obstáculos por `[[x, y, r], ...]` (se recortan a los límites del mundo)."""
+        """Edición en vivo: sustituye los obstáculos por `[[x, y, r], ...]` (recortados a los límites del mundo)."""
+        self._assign_obstacles(obstacles)
+        self._refresh_path()
+
+    def _assign_obstacles(self, obstacles) -> None:
+        """Valida y guarda los obstáculos, sin efectos secundarios (lo usa reset antes de tener el episodio listo)."""
         arr = np.asarray(obstacles, dtype=np.float64) if len(obstacles) else np.empty((0, 3))
         if arr.ndim != 2 or arr.shape[1] != 3 or not np.all(np.isfinite(arr)):
             raise ValueError(
@@ -242,6 +254,7 @@ class BoatEnv(gym.Env):
         """Mueve la meta durante el episodio sin romper la recompensa por progreso."""
         self.goal = _parse_point(goal, "goal")
         self.prev_dist = float(np.linalg.norm(self.goal - self.pos))
+        self._refresh_path()
 
     def observe(self) -> np.ndarray:
         """Observación del estado actual (útil tras editar el escenario sin dar un paso)."""
@@ -292,8 +305,10 @@ class BoatEnv(gym.Env):
         self.trail.append(self.pos.copy())
 
         dist = float(np.linalg.norm(self.goal - self.pos))
-        reward = self._step_reward(dist)
-        self.prev_dist = dist
+        # "Distancia" que mide el progreso: en línea recta, o por ruta navegable en reward_mode="path"
+        progress_dist = dist if self.reward_mode != "path" else self._path_distance(self.pos, fallback=self.prev_dist)
+        reward = self._step_reward(progress_dist)
+        self.prev_dist = progress_dist
 
         terminated = False
         event = None
@@ -321,8 +336,79 @@ class BoatEnv(gym.Env):
         if self.reward_mode == "sparse":
             # Sin pistas: el agente solo sabe que lo ha hecho bien cuando llega (o mal cuando choca)
             return 0.0
-        # Shaping basado en potencial (Φ = -distancia): no cambia la política óptima, pero da señal en cada paso
+        # Shaping basado en potencial (Φ = -distancia): no cambia la política óptima, pero da señal en cada paso.
+        # Con "path" la distancia es por ruta navegable: rodear un obstáculo ya no se castiga
         return PROGRESS_K * (self.prev_dist - dist) - STEP_PENALTY
+
+    # ------------------------------------------------ Distancia por ruta navegable
+    def _refresh_path(self) -> None:
+        """Recalcula el campo de distancias si algo lo usa (recompensa por ruta o sensor de ruta)."""
+        if self.reward_mode != "path" and not self.observe_route:
+            return
+        self._compute_path_field()
+        if self.reward_mode == "path":
+            self.prev_dist = self._path_distance(self.pos, fallback=self.prev_dist)
+
+    def _route_sensor(self) -> list[float]:
+        """[sin, cos] del ángulo, relativo al rumbo, de la dirección en la que más baja la distancia por ruta."""
+        h = 0.5 * PATH_GRID
+        here = self._path_distance(self.pos, fallback=math.inf)
+        samples = [self._path_distance(self.pos + d, fallback=here) for d in ([h, 0], [-h, 0], [0, h], [0, -h])]
+        gradient = np.array([samples[0] - samples[1], samples[2] - samples[3]])
+        if not np.all(np.isfinite(gradient)) or np.linalg.norm(gradient) < 1e-9:
+            direction = self.goal - self.pos  # sin dato (p. ej. junto a una roca): la meta en línea recta
+        else:
+            direction = -gradient
+        rel = math.atan2(direction[1], direction[0]) - self.heading
+        return [math.sin(rel), math.cos(rel)]
+    def _compute_path_field(self) -> None:
+        """Distancia desde cada celda hasta la meta esquivando obstáculos y paredes (8 vecinos).
+
+        Relajación iterativa vectorizada (Bellman-Ford sobre la cuadrícula): unas decenas de pasadas
+        de NumPy, ~10-30 ms por episodio. Los obstáculos se agrandan con el radio del barco.
+        """
+        n = int(round(WORLD_SIZE / PATH_GRID)) + 1
+        coords = np.arange(n) * PATH_GRID
+        gx, gy = np.meshgrid(coords, coords, indexing="ij")
+        margin_lo, margin_hi = BOAT_RADIUS, WORLD_SIZE - BOAT_RADIUS
+        free = (gx >= margin_lo) & (gx <= margin_hi) & (gy >= margin_lo) & (gy <= margin_hi)
+        for (cx, cy), r in zip(self.obs_centers, self.obs_radii, strict=True):
+            free &= (gx - cx) ** 2 + (gy - cy) ** 2 >= (r + BOAT_RADIUS) ** 2
+
+        field = np.full((n, n), np.inf)
+        gi, gj = np.clip(np.round(self.goal / PATH_GRID).astype(int), 0, n - 1)
+        field[gi, gj] = 0.0
+        steps = [(di, dj, PATH_GRID * math.hypot(di, dj)) for di in (-1, 0, 1) for dj in (-1, 0, 1) if di or dj]
+        for _ in range(4 * n):  # cota de seguridad; converge mucho antes
+            best = field.copy()
+            for di, dj, cost in steps:
+                shifted = np.full_like(field, np.inf)
+                src_i = slice(max(-di, 0), n - max(di, 0))
+                dst_i = slice(max(di, 0), n - max(-di, 0))
+                src_j = slice(max(-dj, 0), n - max(dj, 0))
+                dst_j = slice(max(dj, 0), n - max(-dj, 0))
+                shifted[dst_i, dst_j] = field[src_i, src_j] + cost
+                np.minimum(best, shifted, out=best)
+            best[~free] = np.inf
+            best[gi, gj] = 0.0
+            if np.array_equal(best, field):
+                break
+            field = best
+        self._path_field = field
+
+    def _path_distance(self, point: np.ndarray, fallback: float) -> float:
+        """Distancia por ruta en un punto (interpolación bilineal entre las celdas alcanzables)."""
+        field = self._path_field
+        n = field.shape[0]
+        x, y = np.clip(point / PATH_GRID, 0, n - 1 - 1e-9)
+        i, j = int(x), int(y)
+        fx, fy = x - i, y - j
+        values = field[i : i + 2, j : j + 2]
+        weights = np.array([[(1 - fx) * (1 - fy), (1 - fx) * fy], [fx * (1 - fy), fx * fy]])
+        reachable = np.isfinite(values)
+        if not reachable.any():
+            return fallback  # pegado a una roca: sin dato, sin progreso
+        return float((values[reachable] * weights[reachable]).sum() / weights[reachable].sum())
 
     # ----------------------------------------------------------------- Sensores
     def _ray_distances(self) -> np.ndarray:
@@ -364,6 +450,7 @@ class BoatEnv(gym.Env):
             [self.omega / MAX_OMEGA],
             [self.speed / SPEED],
             self._current_sensor() if self.observe_current else [],
+            self._route_sensor() if self.observe_route else [],
         ])
         return np.clip(obs, -1.0, 1.0).astype(np.float32)
 

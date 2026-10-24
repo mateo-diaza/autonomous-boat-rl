@@ -1,5 +1,5 @@
 import { formatSteps } from "@/lib/format";
-import type { CheckpointInfo, ModelRef, RunDetail } from "@/lib/types";
+import type { CheckpointInfo, ModelRef, RunDetail, SensorId } from "@/lib/types";
 
 /** Checkpoints en orden de entrenamiento (los numéricos y "final"); "best" va aparte. */
 export function chronologicalCheckpoints(detail: RunDetail): CheckpointInfo[] {
@@ -55,6 +55,17 @@ export function checkpointLabel(checkpointId: string): string {
 /** "PPO · ppo · 25k pasos" para un modelo cargado, o "Sin modelo". */
 export function describeModel(ref: ModelRef | null): string {
   if (!ref) return "Sin modelo (recto)";
-  const sensors = ref.sensors.includes("current") ? " · sensor de corriente" : "";
+  const sensors = ref.sensors.map((id) => ` · ${SENSOR_LABELS[id]}`).join("");
   return `${ref.algo.toUpperCase()} · ${ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}${sensors}`;
+}
+
+/** Nombre legible de cada sensor extra. */
+export const SENSOR_LABELS: Record<SensorId, string> = {
+  current: "sensor de corriente",
+  route: "sensor de ruta",
+};
+
+/** "con sensor de corriente y sensor de ruta" (o "" si no tiene sensores extra). */
+export function describeSensors(sensors: SensorId[]): string {
+  return sensors.length ? `con ${sensors.map((id) => SENSOR_LABELS[id]).join(" y ")}` : "";
 }

@@ -19,7 +19,7 @@ RunId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]+$", max_length=100)]
 ProblemId = Annotated[str, Field(pattern=r"^[a-z_]+$", max_length=40)]
 CheckpointId = Annotated[str, Field(pattern=r"^(\d+|final|best)$")]
 Event = Literal["goal", "crash", "timeout"]
-SensorId = Literal["current"]
+SensorId = Literal["current", "route"]
 
 
 # ------------------------------------------------------------------------- REST

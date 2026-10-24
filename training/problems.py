@@ -18,8 +18,8 @@ from training.boat_env import BoatEnv
 DEFAULT_PROBLEM = "base"
 
 #: Parámetros de BoatEnv que cambian la observación (y por tanto la red): son del modelo, no del mar
-SENSOR_KEYS = ("observe_current",)
-SENSOR_NAMES = {"observe_current": "current"}
+SENSOR_KEYS = ("observe_current", "observe_route")
+SENSOR_NAMES = {"observe_current": "current", "observe_route": "route"}
 
 
 @dataclass(frozen=True)
@@ -71,6 +71,15 @@ PROBLEMS: dict[str, Problem] = {
                 "callejón: un mínimo local de la recompensa."
             ),
             env_kwargs={"n_obstacles": (0, 3), "u_trap": True},
+        ),
+        Problem(
+            id="u_trap_path",
+            title="Trampa en U · recompensa por ruta",
+            description=(
+                "El mismo arrecife, pero la recompensa premia acercarse por el camino navegable más corto: "
+                "rodear la U ya no se castiga."
+            ),
+            env_kwargs={"n_obstacles": (0, 3), "u_trap": True, "reward_mode": "path"},
         ),
     ]
 }

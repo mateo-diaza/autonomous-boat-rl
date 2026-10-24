@@ -48,7 +48,7 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
    ```
    `title`/`description` en español: los muestra el frontend (lenguaje llano + qué dificultad de RL ilustra).
    La descripción, ≤ ~130 caracteres (2 líneas en la barra de controles).
-   Los parámetros que cambian la OBSERVACIÓN (sensores, p. ej. `observe_current`) no van en el problema sino en
+   Los parámetros que cambian la OBSERVACIÓN (sensores: `observe_current`, `observe_route`) no van en el problema sino en
    el modelo: se eligen al entrenar (`--observe-current`), se guardan en su config.json y el backend reconstruye
    el entorno del barco con ellos al cargarlo (`SENSOR_KEYS` en problems.py, `Lane._set_sensors`).
    Un parámetro nuevo de BoatEnv con valor por defecto "apagado" NO debe consumir azar ni cambiar el orden de las

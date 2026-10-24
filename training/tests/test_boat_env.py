@@ -1,4 +1,5 @@
 import json
+import math
 
 import numpy as np
 import pytest
@@ -183,3 +184,54 @@ def test_u_trap_is_deterministic_given_the_seed():
     a, b = BoatEnv(n_obstacles=(0, 3), u_trap=True), BoatEnv(n_obstacles=(0, 3), u_trap=True)
     a.reset(seed=11), b.reset(seed=11)
     np.testing.assert_array_equal(a.obs_centers, b.obs_centers)
+
+
+def test_path_distance_goes_around_obstacles():
+    env = BoatEnv(n_obstacles=0, reward_mode="path")
+    # Pared de rocas justo entre la salida y la meta
+    wall = [[50, y, 3] for y in range(20, 81, 4)]
+    env.reset(seed=0, options={"start": [30, 50], "goal": [70, 50], "heading": 0.0, "obstacles": wall})
+    straight = np.linalg.norm(env.goal - env.pos)
+    assert env.prev_dist > straight + 10  # hay que rodear la pared
+
+
+def test_path_distance_equals_straight_line_in_open_water():
+    env = BoatEnv(n_obstacles=0, reward_mode="path")
+    env.reset(seed=0, options={"start": [20, 50], "goal": [80, 50], "heading": 0.0, "obstacles": []})
+    assert env.prev_dist == pytest.approx(60.0, abs=1.0)
+
+
+def test_path_reward_does_not_punish_going_around():
+    """Con "path", apartarse de la línea recta para rodear la pared no da recompensa negativa grande."""
+    wall = [[50, y, 3] for y in range(30, 71, 4)]
+    options = {"start": [30, 50], "goal": [70, 50], "heading": -math.pi / 2, "obstacles": wall}
+    rewards = {}
+    for mode in ("shaped", "path"):
+        env = BoatEnv(n_obstacles=0, reward_mode=mode)
+        env.reset(seed=0, options=options)
+        rewards[mode] = sum(env.step(1)[1] for _ in range(10))  # 10 pasos hacia arriba, bordeando la pared
+    assert rewards["path"] > rewards["shaped"]
+
+
+def test_path_field_follows_live_edits():
+    env = BoatEnv(n_obstacles=0, reward_mode="path")
+    env.reset(seed=0, options={"start": [30, 50], "goal": [70, 50], "heading": 0.0, "obstacles": []})
+    before = env.prev_dist
+    env.set_obstacles([[50, y, 3] for y in range(20, 81, 4)])
+    assert env.prev_dist > before + 10
+
+
+def test_route_sensor_points_around_a_wall():
+    env = BoatEnv(n_obstacles=0, observe_route=True)
+    assert env.observation_space.shape == (19,)
+    wall = [[50, y, 3] for y in range(10, 76, 4)]  # pared con hueco abajo (y > 76)
+    obs, _ = env.reset(seed=0, options={"start": [30, 50], "goal": [70, 50], "heading": 0.0, "obstacles": wall})
+    goal_angle = math.atan2(obs[12], obs[13])     # la meta está justo delante (0 rad)
+    route_angle = math.atan2(obs[-2], obs[-1])    # la ruta rodea la pared por el hueco (+y = estribor)
+    assert abs(goal_angle) < 0.05 and route_angle > 0.3
+
+
+def test_route_sensor_matches_goal_direction_in_open_water():
+    env = BoatEnv(n_obstacles=0, observe_route=True)
+    obs, _ = env.reset(seed=0, options={"start": [20, 50], "goal": [80, 50], "heading": 0.0, "obstacles": []})
+    assert math.atan2(obs[-2], obs[-1]) == pytest.approx(0.0, abs=0.05)

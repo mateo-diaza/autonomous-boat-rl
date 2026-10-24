@@ -66,11 +66,13 @@ python -m training.play
 #   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
 python -m training.train --algo ppo --run ppo
 python -m training.train --algo dqn --run dqn
-# Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap
+# Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap | u_trap_path
 python -m training.train --algo ppo --problem sparse --run ppo_sparse
 python -m training.train --problem current --steps 50000 --run ppo_current                            # sin sensor
 python -m training.train --problem current --steps 50000 --observe-current --run ppo_current_sensor   # con sensor
-# Los sensores (--observe-current) son del modelo, no del mar: la web reconstruye el barco con ellos al cargarlo
+# Trampa en U: solo se resuelve con recompensa por ruta navegable + sensor de ruta ("GPS náutico")
+python -m training.train --problem u_trap_path --observe-route --steps 100000 --ckpt-freq 4096 --run ppo_u_trap_route
+# Los sensores (--observe-current, --observe-route) son del modelo, no del mar: la web reconstruye el barco con ellos
 # Todo es configurable: --steps, --ckpt-freq, --n-envs, --n-steps, --n-epochs, --lr, --obstacles
 
 # Ver cómo aprende en pygame: reproduce los checkpoints en orden sobre los mismos escenarios

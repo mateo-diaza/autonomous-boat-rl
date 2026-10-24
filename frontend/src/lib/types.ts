@@ -66,7 +66,7 @@ export type Circle = { x: number; y: number; radius: number };
 export type Vector = { x: number; y: number };
 
 /** Sensores extra con los que se entrenó un modelo. */
-export type SensorId = "current";
+export type SensorId = "current" | "route";
 
 export type Ray = { angle: number; distance: number };
 

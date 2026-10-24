@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Toggle } from "@/components/ui/toggle";
-import { chronologicalCheckpoints, successAt } from "@/lib/checkpoints";
+import { chronologicalCheckpoints, describeSensors, successAt } from "@/lib/checkpoints";
 import { formatPercent } from "@/lib/format";
 import { problemTitle } from "@/hooks/useProblems";
 import type { ProblemInfo, RunDetail, RunSummary } from "@/lib/types";
@@ -86,7 +86,7 @@ export function ModelPicker(props: ModelPickerProps) {
             {selectedRun && (
               <p className="text-xs text-muted-foreground">
                 Entrenado en: <span className="text-foreground">{problemTitle(props.problems ?? [], selectedRun.problem)}</span>
-                {selectedRun.sensors.includes("current") && " · con sensor de corriente"}
+                {selectedRun.sensors.length > 0 && ` · ${describeSensors(selectedRun.sensors)}`}
               </p>
             )}
           </div>

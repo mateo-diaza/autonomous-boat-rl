@@ -91,6 +91,8 @@ def main():
                         help="variante de dificultad del entorno (ver training/problems.py)")
     parser.add_argument("--observe-current", action="store_true",
                         help="sensor de corriente: el agente observa la corriente (+2 dimensiones)")
+    parser.add_argument("--observe-route", action="store_true",
+                        help="sensor de ruta: dirección del camino navegable hacia la meta (+2 dimensiones)")
     parser.add_argument("--obstacles", default=None,
                         help="sobrescribe las rocas del problema: '6' fijo o '4-10' aleatorio por episodio")
     parser.add_argument("--n-envs", type=int, default=None, help="por defecto: 4")
@@ -117,6 +119,8 @@ def main():
         env_kwargs["n_obstacles"] = parse_obstacles(args.obstacles)
     if args.observe_current:
         env_kwargs["observe_current"] = True
+    if args.observe_route:
+        env_kwargs["observe_route"] = True
     run = args.run or f"{args.algo}_{time.strftime('%Y%m%d_%H%M%S')}"
     run_dir = MODELS_DIR / run
     run_dir.mkdir(parents=True, exist_ok=True)
