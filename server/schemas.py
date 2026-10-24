@@ -215,3 +215,102 @@ ClientCommand = Annotated[
     Field(discriminator="type"),
 ]
 command_adapter: TypeAdapter[ClientCommand] = TypeAdapter(ClientCommand)
+
+
+# =============================================================== Comparativa
+LaneId = Literal["A", "B"]
+LANE_IDS: tuple[LaneId, LaneId] = ("A", "B")
+
+
+class LaneScore(BaseModel):
+    """Resultados acumulados de un barco en la comparativa (o en un torneo)."""
+
+    episodes: int
+    goals: int
+    crashes: int
+    timeouts: int
+    mean_steps_to_goal: float | None   # solo travesías con arribada
+    mean_return: float | None
+
+
+class LaneState(BaseModel):
+    id: LaneId
+    model: ModelRef | None
+    deterministic: bool
+    sim: SimState
+
+
+class TournamentResult(BaseModel):
+    episodes: int
+    seed: int
+    scores: list[LaneScore]            # en el orden de LANE_IDS
+    models: list[ModelRef | None]
+
+
+class CompareStatus(BaseModel):
+    playing: bool
+    speed: float
+    auto_reset: bool
+    scenario_seed: int
+    tournament_running: bool
+
+
+class CompareStateMsg(BaseModel):
+    type: Literal["compare_state"] = "compare_state"
+    lanes: list[LaneState]
+    status: CompareStatus
+    scores: list[LaneScore]
+
+
+class LaneResult(BaseModel):
+    id: LaneId
+    event: Event
+    steps: int
+    episode_return: float
+
+
+class RaceEndMsg(BaseModel):
+    """Ambos barcos han terminado la travesía (cada uno puede haber acabado en un paso distinto)."""
+
+    type: Literal["race_end"] = "race_end"
+    results: list[LaneResult]
+
+
+class TournamentMsg(BaseModel):
+    type: Literal["tournament"] = "tournament"
+    result: TournamentResult
+
+
+class CompareLoadModelCmd(BaseModel):
+    type: Literal["load_model"]
+    lane: LaneId
+    run_id: RunId
+    checkpoint_id: CheckpointId
+
+
+class CompareUnloadModelCmd(BaseModel):
+    type: Literal["unload_model"]
+    lane: LaneId
+
+
+class SetLaneDeterministicCmd(BaseModel):
+    type: Literal["set_deterministic"]
+    lane: LaneId
+    deterministic: bool
+
+
+class ResetScoresCmd(BaseModel):
+    type: Literal["reset_scores"]
+
+
+class RunTournamentCmd(BaseModel):
+    type: Literal["run_tournament"]
+    episodes: Annotated[int, Field(ge=1, le=200)] = 50
+
+
+CompareCommand = Annotated[
+    CompareLoadModelCmd | CompareUnloadModelCmd | SetLaneDeterministicCmd | PlayCmd | PauseCmd | StepCmd
+    | SetSpeedCmd | SetAutoResetCmd | NewScenarioCmd | RestartCmd | ResetScoresCmd | RunTournamentCmd,
+    Field(discriminator="type"),
+]
+compare_command_adapter: TypeAdapter[CompareCommand] = TypeAdapter(CompareCommand)
