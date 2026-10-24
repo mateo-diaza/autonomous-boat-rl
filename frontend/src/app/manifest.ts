@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 /** Web app manifest: icono y nombre al añadir la web a la pantalla de inicio en Android. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Bitácora de Barco Autónomo",
-    short_name: "Bitácora",
+    name: "Q-Captain: Learning the Ropes",
+    short_name: "Q-Captain",
     description: "Un barco que aprende a navegar entre rocas con aprendizaje por refuerzo, en vivo.",
     start_url: "/",
     display: "standalone",

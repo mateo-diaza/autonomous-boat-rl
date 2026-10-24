@@ -24,7 +24,7 @@ export function AppHeader({ mode, onModeChange, connection, onOpenShortcuts }: A
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <h1 className="flex items-center gap-3 text-2xl font-semibold italic xl:text-3xl">
           <BoatLogo className="size-10 xl:size-11" />
-          Bitácora de Barco Autónomo
+          Q-Captain: Learning the Ropes
         </h1>
         <p className="text-sm text-muted-foreground">
           Un agente que aprende a navegar entre rocas mediante aprendizaje por refuerzo

@@ -16,7 +16,7 @@ from backend.routes import compare, problems, runs, sim
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
-app = FastAPI(title="Barco autónomo RL", version="0.1.0")
+app = FastAPI(title="Q-Captain: Learning the Ropes", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["GET"], allow_headers=["*"])
 app.include_router(runs.router)
 app.include_router(problems.router)

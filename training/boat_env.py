@@ -563,7 +563,7 @@ class BoatEnv(gym.Env):
         if self._screen is None:
             pygame.init()
             if self.render_mode == "human":
-                pygame.display.set_caption("Barco autónomo - RL")
+                pygame.display.set_caption("Q-Captain: Learning the Ropes")
                 self._screen = pygame.display.set_mode((size, size + HUD_HEIGHT))
             else:
                 self._screen = pygame.Surface((size, size + HUD_HEIGHT))

@@ -1,4 +1,4 @@
-# Barco autónomo con Reinforcement Learning
+# Q-Captain: Learning the Ropes
 
 Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (DQN con
 Stable-Baselines3), con una web para ver en vivo cómo navega y cómo ha ido aprendiendo.
