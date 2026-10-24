@@ -3,7 +3,8 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Tema "Carta náutica" (ver .claude/skills/ui-design). Solo tema claro por ahora.
+ * Tema "Carta náutica amable" (ver .claude/skills/ui-design): paleta náutica + widgets redondeados.
+ * Solo tema claro por ahora.
  * Contrastes medidos contra --background; no cambiar un color sin volver a medirlo.
  * El canvas lee estos mismos tokens con getComputedStyle: son la única fuente de color.
  */
@@ -78,7 +79,9 @@
   --border: #c9b88f;              /* filete decorativo (1.7:1, solo decorativo) */
   --input: #8a7a55;               /* borde de controles 3.6:1 */
   --ring: #1d2b45;
-  --radius: 0.25rem;
+  --radius: 0.75rem;
+  --shadow-widget: 0 1px 2px rgb(29 43 69 / 0.06), 0 8px 24px -12px rgb(29 43 69 / 0.18);
+  --shadow-widget-hover: 0 2px 4px rgb(29 43 69 / 0.08), 0 12px 28px -12px rgb(29 43 69 / 0.24);
 
   --chart-1: #1d2b45;
   --chart-2: #b3412e;
@@ -114,26 +117,50 @@
 }
 
 @layer components {
-  /* Cartela: doble filete (exterior tinta, interior filete) como en las cartas náuticas */
-  .cartouche {
-    @apply bg-card text-card-foreground rounded-sm;
-    border: 1px solid var(--foreground);
-    box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--border);
+  /* Widget: tarjeta redondeada y amable con sombra suave teñida de tinta */
+  .widget {
+    @apply rounded-[1.25rem] border border-border/60 bg-card text-card-foreground;
+    box-shadow: var(--shadow-widget);
   }
 
-  .cartouche-title {
-    @apply font-heading text-lg;
-    font-variant: small-caps;
-    letter-spacing: 0.04em;
+  .widget-title {
+    @apply flex items-center gap-2.5 font-heading text-lg font-semibold;
+  }
+
+  /* Icono del título en un chip circular */
+  .widget-icon {
+    @apply flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground [&_svg]:size-4;
   }
 }
 
+/* Aviso de fin de travesía: aparece y se desvanece solo (sin estado en React) */
+.episode-flash {
+  animation: episode-flash 1.4s ease-out forwards;
+}
+
+@keyframes episode-flash {
+  0% { opacity: 0; transform: scale(0.96); }
+  12% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes episode-flash-static {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *,
+  *:not(.episode-flash),
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Sin movimiento, pero visible el tiempo suficiente para leerlo */
+  .episode-flash {
+    animation-name: episode-flash-static;
   }
 }
