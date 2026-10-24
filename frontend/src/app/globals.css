@@ -41,6 +41,7 @@
   /* Propios de la carta náutica */
   --color-vermilion: var(--vermilion);
   --color-vermilion-text: var(--vermilion-text);
+  --color-boat-b: var(--boat-b);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
@@ -91,6 +92,7 @@
 
   --vermilion: #b3412e;           /* el barco y lo seleccionado  4.8:1 */
   --vermilion-text: #9c3524;      /* texto en bermellón          6.1:1 */
+  --boat-b: #2f5d8a;              /* 2º barco en la comparativa (azul acero) 5.5:1 sobre agua */
   --success: #276b4d;             /* arribada                    5.4:1 */
   --danger: #8e1f4f;              /* encallado / peligro         >7:1 */
   --warning: #8f5a14;             /* tiempo agotado              4.9:1 */

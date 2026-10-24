@@ -46,13 +46,15 @@ frontend/src/
 │   └── globals.css         # tokens de diseño (ver ui-design)
 ├── components/
 │   ├── ui/                 # shadcn/ui generados (retocados: slider accesible, outline con borde 3:1)
-│   ├── dashboard/          # Dashboard (compone y es dueño del estado de UI), Widget, ConnectionBadge, ShortcutsDialog
-│   ├── simulation/         # SimStage (canvas + HUD + edición con puntero), SimToolbar
+│   ├── dashboard/          # App (modo), AppHeader, Dashboard (navegación), Widget, ConnectionBadge, ShortcutsDialog
+│   ├── compare/            # CompareDashboard, CompareStage (2 barcos), Scoreboard (+ torneo), lanes.ts (estilo A/B)
+│   ├── simulation/         # ChartCanvas (canvas + bucle 60 fps), SimStage, SimToolbar, controls (Playback…), Flash
 │   ├── brain/              # BrainPanel (abanico de rayos + preferencia por acción)
 │   ├── voyage/             # VoyagePanel (métricas + bitácora + aria-live)
 │   ├── runs/               # ModelPicker (run + línea del tiempo de checkpoints)
 │   └── charts/             # LearningCurve
-├── hooks/                  # useSimulation, useRuns, useRunDetail, useHotkeys
+├── hooks/                  # useServerSocket (WS genérico), useSimulation, useComparison, useModelSelection,
+│                           # useRuns, useRunDetail, useHotkeys
 └── lib/
     ├── config.ts
     ├── types.ts            # espejo de server/schemas.py

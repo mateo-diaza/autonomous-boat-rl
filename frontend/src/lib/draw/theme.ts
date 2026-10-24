@@ -7,6 +7,8 @@ export type ChartTheme = {
   rock: string;
   rockStroke: string;
   boat: string;
+  boatB: string;
+  card: string;
   goal: string;
   danger: string;
   monoFont: string;
@@ -23,6 +25,8 @@ export function readChartTheme(element: Element = document.documentElement): Cha
     rock: token("--rock"),
     rockStroke: token("--rock-stroke"),
     boat: token("--vermilion"),
+    boatB: token("--boat-b"),
+    card: token("--card"),
     goal: token("--success"),
     danger: token("--danger"),
     monoFont: token("--font-plex-mono") || "monospace",

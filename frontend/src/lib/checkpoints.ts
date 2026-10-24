@@ -1,4 +1,5 @@
-import type { CheckpointInfo, RunDetail } from "@/lib/types";
+import { formatSteps } from "@/lib/format";
+import type { CheckpointInfo, ModelRef, RunDetail } from "@/lib/types";
 
 /** Checkpoints en orden de entrenamiento (los numéricos y "final"); "best" va aparte. */
 export function chronologicalCheckpoints(detail: RunDetail): CheckpointInfo[] {
@@ -41,4 +42,18 @@ export function stepsOfCheckpoint(detail: RunDetail, checkpointId: string): numb
     return rated.find((p) => p.success_rate === best)?.steps ?? null;
   }
   return detail.curve.at(-1)?.steps ?? null; // "final"
+}
+
+/** Nombre legible de un checkpoint a partir de su id ("24576" -> "25k pasos"). */
+export function checkpointLabel(checkpointId: string): string {
+  if (checkpointId === "best") return "Mejor evaluación";
+  if (checkpointId === "final") return "Final";
+  const steps = Number(checkpointId);
+  return steps === 0 ? "Sin entrenar" : `${formatSteps(steps)} pasos`;
+}
+
+/** "PPO · ppo · 25k pasos" para un modelo cargado, o "Sin modelo". */
+export function describeModel(ref: ModelRef | null): string {
+  if (!ref) return "Sin modelo (recto)";
+  return `${ref.algo.toUpperCase()} · ${ref.run_id} · ${checkpointLabel(ref.checkpoint_id)}`;
 }

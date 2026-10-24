@@ -124,3 +124,72 @@ export function isServerMessage(value: unknown): value is ServerMessage {
 export function assertNever(value: never): never {
   throw new Error(`Mensaje no soportado: ${JSON.stringify(value)}`);
 }
+
+// =============================================================== Comparativa (/ws/compare)
+export type LaneId = "A" | "B";
+export const LANE_IDS: readonly LaneId[] = ["A", "B"];
+
+export type LaneScore = {
+  episodes: number;
+  goals: number;
+  crashes: number;
+  timeouts: number;
+  mean_steps_to_goal: number | null;
+  mean_return: number | null;
+};
+
+export type LaneState = { id: LaneId; model: ModelRef | null; deterministic: boolean; sim: SimState };
+
+export type CompareStatus = {
+  playing: boolean;
+  speed: number;
+  auto_reset: boolean;
+  scenario_seed: number;
+  tournament_running: boolean;
+};
+
+export type TournamentResult = {
+  episodes: number;
+  seed: number;
+  scores: LaneScore[];
+  models: (ModelRef | null)[];
+};
+
+export type LaneResult = { id: LaneId; event: EpisodeEvent; steps: number; episode_return: number };
+
+export type CompareStateMsg = { type: "compare_state"; lanes: LaneState[]; status: CompareStatus; scores: LaneScore[] };
+export type RaceEndMsg = { type: "race_end"; results: LaneResult[] };
+export type TournamentMsg = { type: "tournament"; result: TournamentResult };
+
+export type CompareServerMessage = HelloMsg | CompareStateMsg | RaceEndMsg | TournamentMsg | ErrorMsg;
+
+export type CompareCommand =
+  | { type: "load_model"; lane: LaneId; run_id: string; checkpoint_id: string }
+  | { type: "unload_model"; lane: LaneId }
+  | { type: "set_deterministic"; lane: LaneId; deterministic: boolean }
+  | { type: "play" }
+  | { type: "pause" }
+  | { type: "step" }
+  | { type: "set_speed"; speed: number }
+  | { type: "set_auto_reset"; auto_reset: boolean }
+  | { type: "new_scenario"; seed?: number | null; n_obstacles?: number | null }
+  | { type: "restart" }
+  | { type: "reset_scores" }
+  | { type: "run_tournament"; episodes: number };
+
+const COMPARE_MESSAGE_TYPES = new Set<CompareServerMessage["type"]>([
+  "hello",
+  "compare_state",
+  "race_end",
+  "tournament",
+  "error",
+]);
+
+export function isCompareServerMessage(value: unknown): value is CompareServerMessage {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    COMPARE_MESSAGE_TYPES.has((value as { type: CompareServerMessage["type"] }).type)
+  );
+}

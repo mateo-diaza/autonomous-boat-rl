@@ -1,27 +1,27 @@
 "use client";
 
-import { Keyboard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { BrainPanel } from "@/components/brain/BrainPanel";
 import { LearningCurve } from "@/components/charts/LearningCurve";
-import { ConnectionBadge } from "@/components/dashboard/ConnectionBadge";
-import { ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
-import { Button } from "@/components/ui/button";
+import { AppHeader, type AppMode } from "@/components/dashboard/AppHeader";
+import { NAVIGATION_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { SimStage, type MapTool } from "@/components/simulation/SimStage";
 import { SimToolbar } from "@/components/simulation/SimToolbar";
 import { VoyagePanel } from "@/components/voyage/VoyagePanel";
 import { useHotkeys } from "@/hooks/useHotkeys";
-import { useRunDetail } from "@/hooks/useRunDetail";
+import { useModelSelection } from "@/hooks/useModelSelection";
 import { useRuns } from "@/hooks/useRuns";
 import { useSimulation } from "@/hooks/useSimulation";
-import { chronologicalCheckpoints, defaultCheckpointId, modelLabel } from "@/lib/checkpoints";
+import { chronologicalCheckpoints, modelLabel } from "@/lib/checkpoints";
 
 const TOOL_KEYS: Record<string, MapTool> = { "1": "move", "2": "add", "3": "erase" };
 
-/** Pantalla principal: compone la carta, los controles y los paneles. Único dueño del estado de la UI. */
-export function Dashboard() {
+type DashboardProps = { mode: AppMode; onModeChange: (mode: AppMode) => void };
+
+/** Modo navegación: compone la carta, los controles y los paneles. Único dueño del estado de su UI. */
+export function Dashboard({ mode, onModeChange }: DashboardProps) {
   const { connection, world, snapshot, episodes, frames, send } = useSimulation();
   const { state: runsState, retry: retryRuns } = useRuns();
 
@@ -29,14 +29,8 @@ export function Dashboard() {
   const [showRays, setShowRays] = useState(true);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
-  // Selección de modelo: lo elegido por el usuario o, si no ha elegido, el valor por defecto
   const runs = runsState.status === "ready" ? runsState.runs : null;
-  const [chosenRunId, setChosenRunId] = useState<string | null>(null);
-  const runId = chosenRunId ?? runs?.[0]?.id ?? null;
-  const { detail } = useRunDetail(runId);
-  const [chosenCheckpoint, setChosenCheckpoint] = useState<{ runId: string; id: string } | null>(null);
-  const checkpointId =
-    chosenCheckpoint && chosenCheckpoint.runId === runId ? chosenCheckpoint.id : detail ? defaultCheckpointId(detail) : null;
+  const { runId, selectRun, detail, checkpointId, selectCheckpoint } = useModelSelection(runs);
 
   // Cargar el modelo al cambiar la selección o al (re)conectar: el servidor empieza cada sesión sin modelo.
   // Después se repite la travesía desde la salida: si no, el modelo nuevo hereda el barco tal como lo dejó
@@ -49,7 +43,6 @@ export function Dashboard() {
     }
   }, [connection, detail, checkpointId, send]);
 
-  const selectCheckpoint = (id: string) => runId && setChosenCheckpoint({ runId, id });
   const stepCheckpoint = (delta: number) => {
     if (!detail) return;
     const timeline = chronologicalCheckpoints(detail);
@@ -69,11 +62,12 @@ export function Dashboard() {
       "]": () => stepCheckpoint(1),
       s: () => setShowRays((show) => !show),
       "?": () => setShortcutsOpen(true),
+      c: () => onModeChange("compare"),
       ...Object.fromEntries(Object.entries(TOOL_KEYS).map(([key, value]) => [key, () => setTool(value)])),
     }),
     // stepCheckpoint cambia con detail/checkpointId, que ya están en las dependencias
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [send, playing, detail, checkpointId],
+    [send, playing, detail, checkpointId, onModeChange],
   );
   useHotkeys(hotkeys);
 
@@ -82,21 +76,12 @@ export function Dashboard() {
 
   return (
     <div className="flex min-h-dvh flex-col gap-3 p-3 lg:h-dvh lg:p-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h1 className="text-2xl font-semibold italic xl:text-3xl">Bitácora del barco autónomo</h1>
-          <p className="text-sm text-muted-foreground">
-            Un agente que aprende a navegar entre rocas mediante aprendizaje por refuerzo
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-9 rounded-full px-3" onClick={() => setShortcutsOpen(true)} aria-keyshortcuts="?">
-            <Keyboard aria-hidden="true" />
-            Atajos
-          </Button>
-          <ConnectionBadge connection={connection} />
-        </div>
-      </header>
+      <AppHeader
+        mode={mode}
+        onModeChange={onModeChange}
+        connection={connection}
+        onOpenShortcuts={() => setShortcutsOpen(true)}
+      />
 
       {/*
         Escritorio: la página mide exactamente el alto de la ventana. La carta (cuadrada) ocupa todo el alto
@@ -137,7 +122,7 @@ export function Dashboard() {
               runsError={runsState.status === "error" ? runsState.message : null}
               onRetryRuns={retryRuns}
               runId={runId}
-              onRunChange={setChosenRunId}
+              onRunChange={selectRun}
               detail={detail}
               checkpointId={checkpointId}
               onCheckpointChange={selectCheckpoint}
@@ -149,7 +134,7 @@ export function Dashboard() {
         </div>
       </main>
 
-      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} shortcuts={NAVIGATION_SHORTCUTS} />
     </div>
   );
 }

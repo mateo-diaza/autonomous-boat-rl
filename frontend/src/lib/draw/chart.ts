@@ -16,14 +16,17 @@ export type DragPreview =
   | { kind: "goal"; x: number; y: number }
   | { kind: "obstacle"; index: number; x: number; y: number };
 
+/** Un barco a pintar. `tone` elige el color; `label` (A, B…) lo identifica sin depender del color. */
+export type BoatLayer = { boat: Boat | null; trail: Point[]; tone: "a" | "b"; label?: string };
+
 export type ChartScene = {
   world: WorldInfo;
-  boat: Boat | null;
+  boats: BoatLayer[];
   goal: Circle | null;
   obstacles: Circle[];
-  /** Rayos con ángulo RELATIVO al rumbo del barco (ver relativeRays). */
+  /** Rayos con ángulo RELATIVO al rumbo de `raysBoat` (ver relativeRays). */
   rays: Ray[];
-  trail: Point[];
+  raysBoat: Boat | null;
   showRays: boolean;
   drag: DragPreview | null;
   time: number;
@@ -45,11 +48,21 @@ export function drawChart(
 
   drawWater(ctx, scene.world.size, px, theme);
   drawCompass(ctx, scene.world.size, px, theme);
-  drawTrail(ctx, scene.trail, px, theme);
+  for (const layer of scene.boats) drawTrail(ctx, layer.trail, px, toneColor(layer.tone, theme));
   if (scene.goal) drawGoal(ctx, withDrag(scene.goal, scene.drag, "goal"), px, theme, scene);
   drawObstacles(ctx, scene.obstacles, scene.drag, px, theme);
-  if (scene.showRays && scene.boat) drawRays(ctx, scene.boat, scene.rays, scene.world.ray_range, px, theme);
-  if (scene.boat) drawBoat(ctx, scene.boat, px, theme);
+  if (scene.showRays && scene.raysBoat) drawRays(ctx, scene.raysBoat, scene.rays, scene.world.ray_range, px, theme);
+  for (const layer of scene.boats) {
+    if (!layer.boat) continue;
+    drawBoat(ctx, layer.boat, px, theme, toneColor(layer.tone, theme));
+    // A encima del barco y B debajo: si navegan juntos, las letras no se tapan
+    const side = layer.tone === "a" ? -1 : 1;
+    if (layer.label) drawBoatLabel(ctx, layer.boat, layer.label, side, px, theme, toneColor(layer.tone, theme));
+  }
+}
+
+function toneColor(tone: BoatLayer["tone"], theme: ChartTheme): string {
+  return tone === "a" ? theme.boat : theme.boatB;
 }
 
 function drawWater(ctx: CanvasRenderingContext2D, size: number, px: number, theme: ChartTheme) {
@@ -111,11 +124,11 @@ function drawCompass(ctx: CanvasRenderingContext2D, size: number, px: number, th
   ctx.restore();
 }
 
-function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[], px: number, theme: ChartTheme) {
+function drawTrail(ctx: CanvasRenderingContext2D, trail: Point[], px: number, color: string) {
   if (trail.length < 2) return;
   ctx.save();
-  ctx.strokeStyle = theme.ink;
-  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.55;
   ctx.lineWidth = 1.5 * px;
   ctx.setLineDash([4 * px, 4 * px]);
   ctx.beginPath();
@@ -225,7 +238,7 @@ function drawRays(
   ctx.restore();
 }
 
-function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, px: number, theme: ChartTheme) {
+function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, px: number, theme: ChartTheme, fill: string) {
   const r = boat.radius;
   const hull: [number, number][] = [
     [2.2 * r, 0],
@@ -237,7 +250,7 @@ function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, px: number, theme: 
   ctx.save();
   ctx.translate(boat.x, boat.y);
   ctx.rotate(boat.heading);
-  ctx.fillStyle = theme.boat;
+  ctx.fillStyle = fill;
   ctx.strokeStyle = theme.ink;
   ctx.lineWidth = 1.5 * px;
   ctx.beginPath();
@@ -245,6 +258,35 @@ function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, px: number, theme: 
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
+}
+
+/** Letra del barco en una pastilla junto a él (fuera del casco para no taparlo). */
+function drawBoatLabel(
+  ctx: CanvasRenderingContext2D,
+  boat: Boat,
+  label: string,
+  side: -1 | 1,
+  px: number,
+  theme: ChartTheme,
+  color: string,
+) {
+  const r = 9 * px;
+  const x = boat.x;
+  const y = boat.y + side * (boat.radius * 2.4 + r);
+  ctx.save();
+  ctx.fillStyle = theme.card;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2 * px;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = `600 ${11 * px}px ${theme.monoFont}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x, y + 0.5 * px);
   ctx.restore();
 }
 

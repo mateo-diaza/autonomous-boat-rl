@@ -27,6 +27,13 @@ pnpm install && pnpm --dir frontend install   # una sola vez
 pnpm dev                                      # API en :8000 + web en http://localhost:3000
 ```
 
+La web tiene dos modos (selector en la cabecera):
+
+- **Navegación**: un modelo en vivo; se elige el momento del aprendizaje (línea del tiempo o clic en la curva)
+  y se puede editar la carta (mover, añadir y quitar rocas, mover la boya).
+- **Comparativa**: dos modelos (A y B) navegan a la vez exactamente el mismo escenario, con marcador acumulado
+  y **torneo rápido** (20/50/100 escenarios simulados sin animación en unos segundos).
+
 ## Uso
 
 Todos los comandos se lanzan desde la raíz del repo con el venv activado.

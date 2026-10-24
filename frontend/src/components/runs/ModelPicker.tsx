@@ -1,7 +1,7 @@
 "use client";
 
 import { GraduationCap, RotateCw, Trophy } from "lucide-react";
-import { useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { Widget } from "@/components/dashboard/Widget";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import { formatPercent } from "@/lib/format";
 import type { RunDetail, RunSummary } from "@/lib/types";
 
 type ModelPickerProps = {
+  /** Por defecto "Modelo"; en la comparativa, "Barco A" / "Barco B". */
+  title?: string;
+  icon?: ReactNode;
+  /** Controles extra junto al título (p. ej. "Sin azar" por barco). */
+  actions?: ReactNode;
+  className?: string;
   runs: RunSummary[] | null;
   runsError: string | null;
   onRetryRuns: () => void;
@@ -27,9 +33,15 @@ type ModelPickerProps = {
 /** Elegir el "cerebro": qué entrenamiento y en qué momento de su aprendizaje. */
 export function ModelPicker(props: ModelPickerProps) {
   const { runs, runsError, onRetryRuns, runId, onRunChange, detail, checkpointId, onCheckpointChange } = props;
+  const runLabelId = useId();
 
   return (
-    <Widget title="Modelo" icon={<GraduationCap />}>
+    <Widget
+      title={props.title ?? "Modelo"}
+      icon={props.icon ?? <GraduationCap />}
+      actions={props.actions}
+      className={props.className}
+    >
       {runsError ? (
         <div role="alert" className="flex flex-col gap-3 rounded-xl border border-danger/30 bg-danger/8 p-3 text-sm">
           <p>{runsError}</p>
@@ -48,11 +60,11 @@ export function ModelPicker(props: ModelPickerProps) {
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <span id="run-label" className="text-sm text-muted-foreground">
+            <span id={runLabelId} className="text-sm text-muted-foreground">
               Entrenamiento
             </span>
             <Select value={runId ?? undefined} onValueChange={onRunChange}>
-              <SelectTrigger aria-labelledby="run-label" className="h-10 w-full rounded-xl bg-card">
+              <SelectTrigger aria-labelledby={runLabelId} className="h-10 w-full rounded-xl bg-card">
                 <SelectValue placeholder="Elige un entrenamiento" />
               </SelectTrigger>
               <SelectContent>

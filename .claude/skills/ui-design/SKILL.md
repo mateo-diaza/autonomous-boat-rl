@@ -66,6 +66,7 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 | `--primary` | botón principal (fondo tinta, texto papel) | `#1d2b45` / `#f4ecd8` | 12.0 |
 | `--vermilion` | **barco**, selección, checkpoint activo | bermellón `#b3412e` | 4.8 |
 | `--vermilion-text` | texto en bermellón | `#9c3524` | 6.1 |
+| `--boat-b` | 2º barco de la comparativa (azul acero); siempre con su letra "B" | `#2f5d8a` | 5.5 s/ agua |
 | `--accent` | (shadcn) fondo hover/selección suave — **no** es el color de marca | `#e6dcc0` | — |
 | `--success` | meta / éxito | verde `#276b4d` | 5.4 |
 | `--danger` | choque / peligro (magenta de carta: así se marcan los peligros) | `#8e1f4f` | > 7 |

@@ -18,13 +18,19 @@ server/
 ├── schemas.py       # modelos Pydantic: contrato con el frontend (REST + mensajes WS)
 ├── runs.py          # descubrir runs, checkpoints y curvas en models/  (lectura de disco)
 ├── models_cache.py  # carga de modelos SB3 con caché
-├── simulation.py    # SimulationSession: env + modelo + estado; sin nada de red
+├── lane.py          # Lane: un barco con su "cerebro" (BoatEnv + modelo opcional). Pieza común
+├── playback.py      # Playback: reloj play/pausa/velocidad/pausa entre travesías. Pieza común
+├── simulation.py    # SimulationSession: navegación (1 Lane + escenario editable); sin nada de red
+├── comparison.py    # ComparisonSession: 2 Lanes en el mismo escenario + marcador; run_tournament()
 ├── routes/
+│   ├── _ws.py       # común a los WS: origen, Connection (envío serializado), run_loop, load_checkpoint
 │   ├── runs.py      # GET /api/runs, GET /api/runs/{run_id} (checkpoints + curva)
-│   └── sim.py       # WS /ws/sim
+│   ├── sim.py       # WS /ws/sim
+│   └── compare.py   # WS /ws/compare (el torneo corre en un hilo: la regata en vivo no se congela)
 ```
-Tests del backend en `tests/test_server.py` (junto a los del entorno), con un `models/` temporal
-inyectado sustituyendo la dependencia `get_models_dir` (`app.dependency_overrides`).
+Tests del backend en `tests/` (`test_server.py`, `test_comparison.py`). Las fixtures compartidas
+(`models_dir` temporal, `client` con `get_models_dir` sustituida) viven en `tests/conftest.py`.
+Una sesión nueva = componer `Lane` + `Playback`, no copiar lógica de otra sesión.
 
 Regla: **la lógica no vive en las rutas.** Las rutas validan, delegan y serializan.
 `simulation.py` debe poder usarse y testearse sin FastAPI.
