@@ -6,6 +6,7 @@ import { BrainPanel } from "@/components/brain/BrainPanel";
 import { LearningCurve } from "@/components/charts/LearningCurve";
 import { AppHeader, type AppMode } from "@/components/dashboard/AppHeader";
 import { NAVIGATION_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
+import { PANEL_FLOW } from "@/components/dashboard/layout";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { SimStage, type MapTool } from "@/components/simulation/SimStage";
 import { SimToolbar } from "@/components/simulation/SimToolbar";
@@ -115,7 +116,7 @@ export function Dashboard({ mode, onModeChange }: DashboardProps) {
           />
           <section
             aria-label="Paneles de información"
-            className="grid flex-1 gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))]"
+            className={PANEL_FLOW}
           >
             <ModelPicker
               runs={runs}

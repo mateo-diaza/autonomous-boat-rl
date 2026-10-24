@@ -44,8 +44,11 @@ Los detalles cartográficos (rosa de los vientos, retícula) se quedan **dentro 
 - **La página mide exactamente el alto de la ventana** (`h-dvh`): nada de márgenes muertos ni scroll de página.
   Si los paneles no caben (pantallas < 1080px de alto), hace scroll **solo la columna derecha**.
 - La carta es la protagonista: tan grande como permita el alto. Su widget se centra en vertical si no puede ser cuadrado.
-- Paneles en rejilla `repeat(auto-fit, minmax(300px, 1fr))`: 2 columnas en escritorio, 1 en estrecho; las filas
-  se estiran para llenar el alto. El contenido de cada widget debe crecer con él (abanico, gráficas con `w-full`).
+- Paneles en **filas flexibles** (`PANEL_FLOW` en `frontend/src/components/dashboard/layout.ts`): cada panel mide
+  al menos 300px y los de una misma fila se reparten **todo** el ancho, así que un panel que queda solo en su fila
+  lo ocupa entero (nunca huecos de 1/3). Un panel que deba ir siempre solo en su fila: `!basis-full` (p. ej. el
+  marcador). Las filas se estiran para llenar el alto. El contenido de cada widget crece con él (`w-full`).
+  No usar `grid` con `auto-fit`: en pantallas anchas deja el último panel en una columna estrecha.
 - Objetivo verificable: a **1920×1080 todo visible sin scroll**; a 1440×900 y 1366×768, 2 columnas de paneles.
 - < 1024px: una columna (carta arriba a todo el ancho, controles y paneles debajo), scroll normal de página.
 - Todo widget es `position: relative` (`.widget`): los hijos absolutos (textos `sr-only`) no deben escaparse

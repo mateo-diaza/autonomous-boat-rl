@@ -35,7 +35,7 @@ export function Scoreboard(props: ScoreboardProps) {
     <Widget
       title="Marcador"
       icon={<Trophy />}
-      className="lg:col-span-full"
+      className="!basis-full"
       actions={
         <Button variant="ghost" size="sm" disabled={!enabled} onClick={() => send({ type: "reset_scores" })}>
           <RotateCcw aria-hidden="true" />

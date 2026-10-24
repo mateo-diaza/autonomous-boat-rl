@@ -8,6 +8,7 @@ import { LANE_STYLE, type RaysTarget } from "@/components/compare/lanes";
 import { Scoreboard, TOURNAMENT_SIZES } from "@/components/compare/Scoreboard";
 import { AppHeader, type AppMode } from "@/components/dashboard/AppHeader";
 import { COMPARE_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
+import { PANEL_FLOW } from "@/components/dashboard/layout";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { DETERMINISTIC_HINT, LabeledSwitch, PlaybackControls, SELECTED } from "@/components/simulation/controls";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -100,7 +101,7 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
 
           <section
             aria-label="Barcos y marcador"
-            className="grid flex-1 gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))]"
+            className={PANEL_FLOW}
           >
             {(["A", "B"] as const).map((id) => {
               const selection = selections[id];
