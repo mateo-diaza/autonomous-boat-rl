@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 
 import type { Connection, EpisodeLogEntry } from "@/hooks/useSimulation";
 import { drawChart, relativeRays, type DragPreview } from "@/lib/draw/chart";
@@ -17,8 +17,11 @@ export type MapTool = "move" | "add" | "erase";
 /** Margen (unidades del mundo) para acertar a rocas pequeñas con el puntero. */
 const HIT_MARGIN = 1.5;
 export const NEW_ROCK_RADIUS = 5;
+/** Lo que dura el aviso de fin de travesía (coincide con la animación .episode-flash). */
+const FLASH_MS = 1400;
 
 type SimStageProps = {
+  className?: string;
   world: WorldInfo | null;
   frames: FrameStore;
   snapshot: StateMsg | null;
@@ -32,7 +35,7 @@ type SimStageProps = {
 
 /** La carta: canvas a 60 fps + HUD + avisos. Toda la edición del mapa con puntero pasa por aquí. */
 export function SimStage(props: SimStageProps) {
-  const { world, frames, snapshot, connection, tool, showRays, modelLabel, lastEpisode, send } = props;
+  const { className, world, frames, snapshot, connection, tool, showRays, modelLabel, lastEpisode, send } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<DragPreview | null>(null);
@@ -96,7 +99,8 @@ export function SimStage(props: SimStageProps) {
     : "Carta de navegación cargando.";
 
   return (
-    <div className="widget relative p-2 sm:p-3">
+    // flex + justify-center: si el widget no puede ser cuadrado (ancho limitado), la carta queda centrada
+    <div className={cn("widget flex flex-col justify-center p-2 sm:p-3", className)}>
       <div ref={containerRef} className="relative aspect-square w-full overflow-hidden rounded-[0.875rem] bg-water">
         <canvas
           ref={canvasRef}
@@ -132,8 +136,18 @@ export function SimStage(props: SimStageProps) {
   );
 }
 
-/** Aviso breve y centrado al terminar una travesía (se desvanece solo con CSS). */
+/**
+ * Aviso breve y centrado al terminar una travesía. Se desmonta solo tras FLASH_MS: la animación CSS
+ * es solo estética, nunca la responsable de ocultarlo (si no se aplicara, el aviso se quedaría fijo).
+ */
 function EpisodeFlash({ episode }: { episode: EpisodeLogEntry }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(false), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!visible) return null;
+
   const outcome = EPISODE_OUTCOMES[episode.event];
   const Icon = outcome.icon;
   return (
