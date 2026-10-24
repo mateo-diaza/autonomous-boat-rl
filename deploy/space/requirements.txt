@@ -1,0 +1,8 @@
+# Solo lo que necesita el backend en producción (sin pygame ni tensorboard).
+# Versiones fijadas a las del entorno donde se entrenaron los modelos.
+# PyTorch (CPU) se instala antes en el Dockerfile, desde su propio índice.
+stable-baselines3==2.9.0
+gymnasium==1.4.0
+numpy==2.5.4
+fastapi==0.162.0
+uvicorn[standard]

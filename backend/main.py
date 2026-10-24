@@ -1,6 +1,7 @@
-"""App FastAPI: REST de runs + WebSocket de simulación. Solo para uso local.
+"""App FastAPI: REST de runs + WebSocket de simulación.
 
-Arranque: .venv/bin/uvicorn backend.main:app --reload --port 8000
+Arranque local: .venv/bin/uvicorn backend.main:app --reload --port 8000
+Despliegue: deploy/README.md (imagen Docker para Hugging Face Spaces).
 """
 
 from __future__ import annotations

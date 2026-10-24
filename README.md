@@ -21,6 +21,7 @@ autonomous-boat-rl/
 │   ├── routes/          #   REST de runs, /ws/sim (navegación), /ws/compare (comparativa)
 │   └── tests/
 ├── frontend/            # Web Next.js (TypeScript)
+├── deploy/              # Despliegue: backend en Hugging Face Spaces, frontend en Vercel
 ├── package.json         # arranque conjunto de la demo (pnpm dev)
 ├── requirements.txt     # dependencias Python de todo el repo (incluye training/ y backend/)
 └── pyproject.toml       # configuración de ruff y pytest
@@ -83,6 +84,10 @@ python -m training.replay training/models/dqn/best/best_model.zip --episodes 10
 # Curvas de aprendizaje (rollout/success_rate, eval/mean_reward...)
 tensorboard --logdir training/logs
 ```
+
+## Despliegue
+
+Backend en Hugging Face Spaces (Docker) y frontend en Vercel: pasos en [deploy/README.md](deploy/README.md).
 
 ## Calidad
 

@@ -18,3 +18,6 @@ frontend/.next/
 frontend/next-env.d.ts
 .pytest_cache/
 .ruff_cache/
+
+# Despliegue (generado por deploy/build_space.sh)
+deploy/space/build/
