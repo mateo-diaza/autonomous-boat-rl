@@ -21,8 +21,8 @@ from pathlib import Path
 import pygame
 from stable_baselines3 import DQN, PPO
 
-from src.boat_env import BoatEnv
 from scripts.train import parse_obstacles
+from src.boat_env import BoatEnv
 
 ALGOS = {"dqn": DQN, "ppo": PPO}
 
@@ -82,7 +82,8 @@ def main():
                 model.set_random_seed(args.seed + ep)  # muestreo reproducible: mismo checkpoint -> mismas acciones
             done = skip = False
             while not done and not skip:
-                env.overlay_text = f"{label}{' (estoc.)' if args.stochastic else ''} | ep {ep + 1}/{args.episodes} | metas {wins}"
+                mode = " (estoc.)" if args.stochastic else ""
+                env.overlay_text = f"{label}{mode} | ep {ep + 1}/{args.episodes} | metas {wins}"
                 action, _ = model.predict(obs, deterministic=not args.stochastic)
                 obs, _, terminated, truncated, info = env.step(action)
                 if args.max_steps and not terminated and env.steps >= args.max_steps:
