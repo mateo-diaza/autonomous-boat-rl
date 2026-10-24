@@ -20,6 +20,17 @@ export type MapTool = "move" | "add" | "erase";
 const HIT_MARGIN = 1.5;
 export const NEW_ROCK_RADIUS = 5;
 
+/**
+ * Gestos táctiles por herramienta. Con "Mover" en pantallas táctiles, deslizar en vertical desplaza la página
+ * (arrastrar en horizontal sigue moviendo rocas); "Añadir" y "Borrar" son toques y no bloquean el scroll.
+ * Con ratón no hay conflicto: "Mover" captura el arrastre.
+ */
+const TOUCH_BY_TOOL: Record<MapTool, string> = {
+  move: "touch-none pointer-coarse:touch-pan-y",
+  add: "touch-manipulation",
+  erase: "touch-manipulation",
+};
+
 type SimStageProps = {
   className?: string;
   world: WorldInfo | null;
@@ -113,6 +124,7 @@ export function SimStage(props: SimStageProps) {
         connection={connection}
         buildScene={buildScene}
         ariaLabel={description}
+        touchClassName={TOUCH_BY_TOOL[tool]}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -120,11 +132,13 @@ export function SimStage(props: SimStageProps) {
       >
         {sim && (
           <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 font-mono text-sm tabular-nums">
-            <span className="rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
+            <span className="max-w-full truncate rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
               Paso {sim.step} · Retorno {formatReturn(sim.episode_return)}
             </span>
-            <span className="flex flex-col items-end gap-1.5">
-              <span className="rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">{modelLabel}</span>
+            <span className="flex max-w-full min-w-0 flex-col items-end gap-1.5">
+              <span className="max-w-full truncate rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
+                {modelLabel}
+              </span>
               <CurrentBadge current={sim.current} />
             </span>
           </div>

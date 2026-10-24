@@ -69,7 +69,7 @@ export function Scoreboard(props: ScoreboardProps) {
                   aria-labelledby={sizeLabelId}
                   value={String(tournamentSize)}
                   onValueChange={(value) => value && onTournamentSizeChange(Number(value))}
-                  className="rounded-xl bg-secondary p-1"
+                  className="flex-wrap rounded-xl bg-secondary p-1"
                   size="sm"
                 >
                   {TOURNAMENT_SIZES.map((size) => (

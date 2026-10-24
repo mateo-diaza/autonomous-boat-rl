@@ -94,7 +94,7 @@ export function SimToolbar(props: SimToolbarProps) {
             aria-labelledby={toolLabelId}
             value={tool}
             onValueChange={(value) => value && onToolChange(value as MapTool)}
-            className="rounded-xl bg-secondary p-1"
+            className="flex-wrap rounded-xl bg-secondary p-1"
           >
             {TOOLS.map((t) => (
               <ToggleGroupItem key={t.value} value={t.value} title={t.hint} className={`gap-1.5 rounded-lg px-3 ${SELECTED}`}>

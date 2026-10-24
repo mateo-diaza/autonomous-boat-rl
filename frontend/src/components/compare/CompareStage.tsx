@@ -53,7 +53,13 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
 
   return (
     <div className={cn("widget flex flex-col justify-center p-2 sm:p-3", className)}>
-      <ChartCanvas world={world} connection={connection} buildScene={buildScene} ariaLabel={description}>
+      <ChartCanvas
+        world={world}
+        connection={connection}
+        buildScene={buildScene}
+        ariaLabel={description}
+        touchClassName="touch-auto" // en la comparativa no se edita la carta: el scroll táctil es libre
+      >
         {lanes[0] && (
           <div className="pointer-events-none absolute top-3 right-3 font-mono text-sm tabular-nums">
             <CurrentBadge current={lanes[0].sim.current} />
@@ -61,11 +67,14 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
         )}
         <ul className="pointer-events-none absolute inset-x-3 top-3 flex flex-col items-start gap-1.5 font-mono text-sm tabular-nums">
           {lanes.map((lane) => (
-            <li key={lane.id} className="flex items-center gap-2 rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
+            <li
+              key={lane.id}
+              className="flex max-w-full min-w-0 items-center gap-2 rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur"
+            >
               <span aria-hidden="true" className={cn("size-2.5 rounded-full", LANE_STYLE[lane.id].dot)} />
               <span className="font-semibold">{lane.id}</span>
-              <span>{describeModel(lane.model)}</span>
-              <span className="text-muted-foreground">· paso {lane.sim.step}</span>
+              <span className="min-w-0 truncate">{describeModel(lane.model)}</span>
+              <span className="shrink-0 text-muted-foreground">· paso {lane.sim.step}</span>
             </li>
           ))}
         </ul>

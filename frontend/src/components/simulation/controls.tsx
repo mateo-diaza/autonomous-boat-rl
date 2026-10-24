@@ -76,7 +76,7 @@ export function PlaybackControls({ playing, speed, autoReset, enabled, send, chi
           value={String(speed)}
           onValueChange={(value) => value && send({ type: "set_speed", speed: Number(value) })}
           disabled={!enabled}
-          className="rounded-xl bg-secondary p-1"
+          className="flex-wrap rounded-xl bg-secondary p-1"
         >
           {SPEEDS.map((option) => (
             <ToggleGroupItem

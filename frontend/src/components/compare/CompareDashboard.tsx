@@ -8,7 +8,7 @@ import { LANE_STYLE, type RaysTarget } from "@/components/compare/lanes";
 import { Scoreboard, TOURNAMENT_SIZES } from "@/components/compare/Scoreboard";
 import { AppHeader, type AppMode } from "@/components/dashboard/AppHeader";
 import { COMPARE_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
-import { PANEL_FLOW } from "@/components/dashboard/layout";
+import { MAIN_GRID, PANEL_FLOW, STAGE_SIZE } from "@/components/dashboard/layout";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { DETERMINISTIC_HINT, LabeledSwitch, PlaybackControls, SELECTED } from "@/components/simulation/controls";
 import { ProblemPicker } from "@/components/simulation/ProblemPicker";
@@ -78,9 +78,9 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
         onOpenShortcuts={() => setShortcutsOpen(true)}
       />
 
-      <main className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+      <main className={MAIN_GRID}>
         <CompareStage
-          className="lg:aspect-square lg:h-full lg:max-w-[calc(100vw_-_2.75rem_-_640px)]"
+          className={STAGE_SIZE}
           world={world}
           frames={frames}
           snapshot={snapshot}
@@ -189,7 +189,7 @@ function RaysSelector({ value, onChange }: { value: RaysTarget; onChange: (value
         aria-label="Rayos del sensor de"
         value={value}
         onValueChange={(next) => next && onChange(next as RaysTarget)}
-        className="rounded-xl bg-secondary p-1"
+        className="flex-wrap rounded-xl bg-secondary p-1"
         size="sm"
       >
         <ToggleGroupItem value="A" className={`rounded-lg px-2.5 ${SELECTED}`}>

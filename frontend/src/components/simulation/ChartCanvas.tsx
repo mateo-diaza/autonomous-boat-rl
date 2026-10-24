@@ -6,6 +6,7 @@ import type { Connection } from "@/hooks/useServerSocket";
 import { drawChart, type ChartScene } from "@/lib/draw/chart";
 import { readChartTheme } from "@/lib/draw/theme";
 import type { WorldInfo } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 /** Lo que cada carta decide en cada frame; el resto (mundo, tiempo, movimiento reducido) lo pone ChartCanvas. */
 export type SceneContent = Omit<ChartScene, "world" | "time" | "reducedMotion">;
@@ -16,6 +17,8 @@ type ChartCanvasProps = {
   /** Se llama en cada frame (60 fps). Se lee de una ref: puede cambiar sin reiniciar el bucle. */
   buildScene: (now: number) => SceneContent;
   ariaLabel: string;
+  /** `touch-action` del canvas (clases de Tailwind): qué gestos táctiles se quedan para la página. */
+  touchClassName?: string;
   onPointerDown?: PointerEventHandler<HTMLCanvasElement>;
   onPointerMove?: PointerEventHandler<HTMLCanvasElement>;
   onPointerUp?: PointerEventHandler<HTMLCanvasElement>;
@@ -25,7 +28,8 @@ type ChartCanvasProps = {
 };
 
 /** Carta cuadrada pintada en canvas a 60 fps, con soporte HiDPI y velo de desconexión. */
-export function ChartCanvas({ world, connection, buildScene, ariaLabel, children, ...pointer }: ChartCanvasProps) {
+export function ChartCanvas(props: ChartCanvasProps) {
+  const { world, connection, buildScene, ariaLabel, touchClassName = "touch-none", children, ...pointer } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputsRef = useRef({ world, buildScene });
@@ -77,7 +81,7 @@ export function ChartCanvas({ world, connection, buildScene, ariaLabel, children
 
   return (
     <div ref={containerRef} className="relative aspect-square w-full overflow-hidden rounded-[0.875rem] bg-water">
-      <canvas ref={canvasRef} role="img" aria-label={ariaLabel} className="absolute inset-0 size-full touch-none" {...pointer} />
+      <canvas ref={canvasRef} role="img" aria-label={ariaLabel} className={cn("absolute inset-0 size-full", touchClassName)} {...pointer} />
       {children}
       {connection !== "open" && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">

@@ -6,7 +6,7 @@ import { BrainPanel } from "@/components/brain/BrainPanel";
 import { LearningCurve } from "@/components/charts/LearningCurve";
 import { AppHeader, type AppMode } from "@/components/dashboard/AppHeader";
 import { NAVIGATION_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/ShortcutsDialog";
-import { PANEL_FLOW } from "@/components/dashboard/layout";
+import { MAIN_GRID, PANEL_FLOW, STAGE_SIZE } from "@/components/dashboard/layout";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { SimStage, type MapTool } from "@/components/simulation/SimStage";
 import { SimToolbar } from "@/components/simulation/SimToolbar";
@@ -86,13 +86,9 @@ export function Dashboard({ mode, onModeChange }: DashboardProps) {
         onOpenShortcuts={() => setShortcutsOpen(true)}
       />
 
-      {/*
-        Escritorio: la página mide exactamente el alto de la ventana. La carta (cuadrada) ocupa todo el alto
-        y su ancho sale de ahí, pero cede lo justo para dejar 640px a la derecha (2 columnas de paneles).
-      */}
-      <main className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+      <main className={MAIN_GRID}>
         <SimStage
-          className="lg:aspect-square lg:h-full lg:max-w-[calc(100vw_-_2.75rem_-_640px)]"
+          className={STAGE_SIZE}
           world={world}
           frames={frames}
           snapshot={snapshot}

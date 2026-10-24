@@ -36,7 +36,7 @@ export function AppHeader({ mode, onModeChange, connection, onOpenShortcuts }: A
           aria-label="Modo"
           value={mode}
           onValueChange={(value) => value && onModeChange(value as AppMode)}
-          className="rounded-full border border-border/70 bg-card p-1 shadow-sm"
+          className="flex-wrap rounded-full border border-border/70 bg-card p-1 shadow-sm"
         >
           <ToggleGroupItem value="navigate" className={`gap-1.5 rounded-full px-3 ${SELECTED}`}>
             <Sailboat aria-hidden="true" />
