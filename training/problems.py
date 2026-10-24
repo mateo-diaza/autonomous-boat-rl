@@ -58,10 +58,10 @@ PROBLEMS: dict[str, Problem] = {
             id="current",
             title="Corrientes",
             description=(
-                "Corriente aleatoria de 5–8 u/s (más de media velocidad del barco). Sin sensor no la ve "
+                "Corriente aleatoria de 4–6,5 u/s (casi media velocidad del barco). Sin sensor no la ve "
                 "y debe deducirla de la deriva: observabilidad parcial."
             ),
-            env_kwargs={**_BASE_ENV, "current_speed": (5.0, 8.0)},
+            env_kwargs={**_BASE_ENV, "current_speed": (4.0, 6.5)},
         ),
         Problem(
             id="u_trap",
