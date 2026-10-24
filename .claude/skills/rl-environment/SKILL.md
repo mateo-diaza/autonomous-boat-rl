@@ -48,6 +48,8 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
    ```
    `title`/`description` en español: los muestra el frontend (lenguaje llano + qué dificultad de RL ilustra).
    La descripción, ≤ ~130 caracteres (2 líneas en la barra de controles).
+   Si el problema solo cambia la RECOMPENSA (misma física que otro), es una variante de entrenamiento:
+   `sea="<id del mar>"`. No sale en "Condiciones del mar" y las sesiones navegan en su mar base.
    Además `model_name` y `training_note` (y `no_sensor_note` si hay sensores que importan): de ahí sale el
    nombre de los modelos en la web ("Corrientes + sensor" · "corriente aleatoria · sensor de corriente").
    Nada de ids técnicos (`dqn_current_sensor`) ni del algoritmo en la interfaz: solo en tooltips.

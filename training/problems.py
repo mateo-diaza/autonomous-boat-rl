@@ -18,12 +18,13 @@ from training.boat_env import BoatEnv
 DEFAULT_PROBLEM = "base"
 
 #: Parámetros de BoatEnv que cambian la observación (y por tanto la red): son del modelo, no del mar
-SENSOR_KEYS = ("observe_current", "observe_route")
-SENSOR_NAMES = {"observe_current": "current", "observe_route": "route"}
+SENSOR_KEYS = ("observe_current", "observe_route", "frame_stack")
+SENSOR_NAMES = {"observe_current": "current", "observe_route": "route", "frame_stack": "memory"}
 #: Cómo se nombra cada sensor: sufijo del nombre corto del modelo y texto de su descripción
 SENSOR_DISPLAY = {
     "observe_current": (" + sensor", "sensor de corriente"),
     "observe_route": (" + GPS", "sensor de ruta"),
+    "frame_stack": (" + memoria", "memoria de varios instantes"),
 }
 
 
@@ -40,6 +41,9 @@ class Problem:
     training_note: str = ""
     #: Nota si el modelo se entrenó SIN sensores en un problema donde importan ("sin sensor")
     no_sensor_note: str = ""
+    #: Si es una VARIANTE DE ENTRENAMIENTO de otro mar (misma física, otra recompensa): id de ese mar.
+    #: No aparece en "Condiciones del mar": para navegar un modelo ya entrenado es el mismo mar.
+    sea: str | None = None
 
 
 _BASE_ENV = {"n_obstacles": (4, 10)}
@@ -67,6 +71,7 @@ PROBLEMS: dict[str, Problem] = {
             env_kwargs={**_BASE_ENV, "reward_mode": "sparse"},
             model_name="Sin pistas",
             training_note="recompensa escasa",
+            sea="base",
         ),
         Problem(
             id="current",
@@ -101,6 +106,19 @@ PROBLEMS: dict[str, Problem] = {
             env_kwargs={"n_obstacles": (0, 3), "u_trap": True, "reward_mode": "path"},
             model_name="Trampa en U",
             training_note="recompensa por ruta",
+            sea="u_trap",
+        ),
+        Problem(
+            id="moving",
+            title="Rocas a la deriva",
+            description=(
+                "Las rocas se mueven y rebotan en los bordes. Con una sola «foto» de los rayos no se sabe hacia "
+                "dónde van: hace falta memoria."
+            ),
+            env_kwargs={"n_obstacles": (5, 9), "obstacle_speed": (5.0, 8.0)},
+            model_name="Rocas a la deriva",
+            training_note="rocas en movimiento",
+            no_sensor_note="sin memoria",
         ),
     ]
 }
@@ -111,6 +129,17 @@ def get_problem(problem_id: str) -> Problem:
         return PROBLEMS[problem_id]
     except KeyError:
         raise ValueError(f"Problema desconocido: {problem_id!r}. Disponibles: {', '.join(PROBLEMS)}") from None
+
+
+def get_sea(problem_id: str) -> Problem:
+    """El mar (física) de un problema: las variantes de entrenamiento devuelven su mar base."""
+    problem = get_problem(problem_id)
+    return get_problem(problem.sea) if problem.sea else problem
+
+
+def seas() -> list[Problem]:
+    """Mares distintos (lo que se elige en "Condiciones del mar"), sin variantes de entrenamiento."""
+    return [p for p in PROBLEMS.values() if p.sea is None]
 
 
 def make_env(problem_id: str = DEFAULT_PROBLEM, **overrides) -> BoatEnv:
@@ -134,8 +163,12 @@ def run_env_kwargs(config: dict) -> dict:
 
 
 def sensor_kwargs(env_kwargs: dict) -> dict:
-    """Solo los parámetros de sensores activos de un run (p. ej. {"observe_current": True})."""
-    return {key: env_kwargs[key] for key in SENSOR_KEYS if env_kwargs.get(key)}
+    """Solo los parámetros de sensores activos de un run (p. ej. {"observe_current": True, "frame_stack": 4})."""
+    return {key: env_kwargs[key] for key in SENSOR_KEYS if _sensor_active(key, env_kwargs.get(key))}
+
+
+def _sensor_active(key: str, value) -> bool:
+    return bool(value) and not (key == "frame_stack" and int(value) <= 1)
 
 
 def sensor_names(sensors: dict) -> list[str]:

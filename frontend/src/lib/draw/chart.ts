@@ -5,7 +5,7 @@
 
 import type { ChartTheme } from "@/lib/draw/theme";
 import type { Point } from "@/lib/sim/frameStore";
-import type { Boat, Circle, Ray, Vector, WorldInfo } from "@/lib/types";
+import type { Boat, Circle, Obstacle, Ray, Vector, WorldInfo } from "@/lib/types";
 
 const GRID_STEP = 10;
 const NEAR_RAY_FRACTION = 0.4;
@@ -23,7 +23,7 @@ export type ChartScene = {
   world: WorldInfo;
   boats: BoatLayer[];
   goal: Circle | null;
-  obstacles: Circle[];
+  obstacles: Obstacle[];
   /** Rayos con ángulo RELATIVO al rumbo de `raysBoat` (ver relativeRays). */
   rays: Ray[];
   raysBoat: Boat | null;
@@ -205,11 +205,12 @@ function drawGoal(ctx: CanvasRenderingContext2D, goal: Circle, px: number, theme
 
 function drawObstacles(
   ctx: CanvasRenderingContext2D,
-  obstacles: Circle[],
+  obstacles: Obstacle[],
   drag: DragPreview | null,
   px: number,
   theme: ChartTheme,
 ) {
+  obstacles.forEach((rock) => drawWake(ctx, rock, px, theme));
   obstacles.forEach((rock, index) => {
     const dragged = drag?.kind === "obstacle" && drag.index === index;
     if (dragged) {
@@ -219,6 +220,37 @@ function drawObstacles(
       drawRock(ctx, rock, px, theme, 1);
     }
   });
+}
+
+const WAKE_SECONDS = 1.2; // largo de la estela: lo que la roca recorre en este tiempo
+
+/** Estela detrás de una roca móvil: indica hacia dónde va y lo rápido que se mueve. */
+function drawWake(ctx: CanvasRenderingContext2D, rock: Obstacle, px: number, theme: ChartTheme) {
+  const speed = Math.hypot(rock.vx, rock.vy);
+  if (speed < 1e-6) return;
+  const ux = rock.vx / speed;
+  const uy = rock.vy / speed;
+  const length = speed * WAKE_SECONDS;
+  const nx = -uy;
+  const ny = ux;
+  ctx.save();
+  ctx.strokeStyle = theme.rockStroke;
+  ctx.lineWidth = 1.5 * px;
+  for (const offset of [-0.5, 0, 0.5]) {
+    const sx = rock.x + nx * rock.radius * offset - ux * rock.radius;
+    const sy = rock.y + ny * rock.radius * offset - uy * rock.radius;
+    const trail = length * (offset === 0 ? 1 : 0.7);
+    const gradient = ctx.createLinearGradient(sx, sy, sx - ux * trail, sy - uy * trail);
+    gradient.addColorStop(0, theme.rockStroke);
+    gradient.addColorStop(1, "transparent");
+    ctx.strokeStyle = gradient;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx - ux * trail, sy - uy * trail);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawRock(ctx: CanvasRenderingContext2D, rock: Circle, px: number, theme: ChartTheme, alpha: number) {

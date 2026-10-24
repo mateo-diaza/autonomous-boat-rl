@@ -54,8 +54,11 @@ class Lane:
         self._refresh_probs()
 
     def scenario(self) -> dict:
-        """Escenario actual como `options` de reset: salida, rumbo y corriente iniciales + meta y obstáculos."""
-        return {**self._initial, "goal": self.env.goal.tolist(), "obstacles": self.obstacles()}
+        """Escenario como `options` de reset: salida, rumbo y corriente iniciales, meta actual y obstáculos
+        (y sus velocidades) del inicio del episodio o de la última edición."""
+        obstacles, velocities = self.env.initial_obstacles()
+        return {**self._initial, "goal": self.env.goal.tolist(), "obstacles": obstacles,
+                "obstacle_velocities": velocities}
 
     def obstacles(self) -> list[list[float]]:
         env = self.env

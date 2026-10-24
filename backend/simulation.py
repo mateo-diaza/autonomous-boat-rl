@@ -32,13 +32,14 @@ from backend.schemas import (
     StepCmd,
     UnloadModelCmd,
 )
-from training.problems import DEFAULT_PROBLEM, get_problem
+from training.problems import DEFAULT_PROBLEM, get_sea
 
 
 class SimulationSession:
     def __init__(self, problem: str = DEFAULT_PROBLEM, seed: int | None = None):
-        self.problem = problem
-        self.lane = Lane(get_problem(problem).env_kwargs)
+        sea = get_sea(problem)
+        self.problem = sea.id
+        self.lane = Lane(sea.env_kwargs)
         self.playback = Playback()
         self._rng = np.random.default_rng(seed)
         self._dirty = True  # hay cambios que el cliente aún no ha recibido
@@ -58,8 +59,9 @@ class SimulationSession:
 
     def set_problem(self, problem: str) -> None:
         """Otras condiciones del mar: nuevo entorno (conservando el modelo) y escenario nuevo."""
-        self.lane.reconfigure(get_problem(problem).env_kwargs)  # ValueError si no existe
-        self.problem = problem
+        sea = get_sea(problem)  # ValueError si no existe; las variantes de recompensa navegan en su mar
+        self.lane.reconfigure(sea.env_kwargs)
+        self.problem = sea.id
         self.new_scenario()
 
     def restart(self) -> None:

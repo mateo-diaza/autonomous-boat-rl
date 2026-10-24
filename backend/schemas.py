@@ -19,7 +19,7 @@ RunId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]+$", max_length=100)]
 ProblemId = Annotated[str, Field(pattern=r"^[a-z_]+$", max_length=40)]
 CheckpointId = Annotated[str, Field(pattern=r"^(\d+|final|best)$")]
 Event = Literal["goal", "crash", "timeout"]
-SensorId = Literal["current", "route"]
+SensorId = Literal["current", "route", "memory"]
 
 
 # ------------------------------------------------------------------------- REST
@@ -91,6 +91,11 @@ class Vector(BaseModel):
     y: float
 
 
+class Obstacle(Circle):
+    vx: float = 0.0              # velocidad (u/s); 0 = roca quieta
+    vy: float = 0.0
+
+
 class Ray(BaseModel):
     angle: float
     distance: float
@@ -110,7 +115,7 @@ class SimState(BaseModel):
     event: Event | None
     boat: Boat
     goal: Circle
-    obstacles: list[Circle]
+    obstacles: list[Obstacle]
     current: Vector                    # corriente del episodio (u/s); (0, 0) si no hay
     rays: list[Ray]
     action: int | None                 # 0 izq / 1 recto / 2 der; None si aún no ha actuado

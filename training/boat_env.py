@@ -97,6 +97,8 @@ class BoatEnv(gym.Env):
         observe_current: bool = False,
         u_trap: bool = False,
         observe_route: bool = False,
+        obstacle_speed: tuple[float, float] = (0.0, 0.0),
+        frame_stack: int = 1,
     ):
         """
         `reward_mode`: "shaped" (progreso hacia la meta en línea recta), "sparse" (solo ±100 al terminar) o
@@ -109,6 +111,10 @@ class BoatEnv(gym.Env):
             lleva al fondo de la U: un mínimo local de la recompensa por progreso.
         `observe_route`: sensor de ruta, como un GPS náutico: dirección del camino navegable más corto hacia
             la meta (+2 dimensiones). Igual que el sensor de corriente, cambia la forma de la observación.
+        `obstacle_speed`: rango (u/s) de velocidad de las rocas aleatorias; se mueven en línea recta y rebotan
+            en los bordes. (0, 0) = rocas quietas. Las rocas de la U nunca se mueven.
+        `frame_stack`: memoria del agente: observa los últimos N instantes apilados (frame stacking), de los
+            que puede deducir velocidades. Multiplica por N la forma de la observación.
         """
         super().__init__()
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -120,12 +126,19 @@ class BoatEnv(gym.Env):
         self.observe_current = observe_current
         self.u_trap = u_trap
         self.observe_route = observe_route
+        self.obstacle_speed = (float(obstacle_speed[0]), float(obstacle_speed[1]))
+        if frame_stack < 1:
+            raise ValueError(f"frame_stack debe ser >= 1, recibido: {frame_stack}")
+        self.frame_stack = int(frame_stack)
+        self._frames: list[np.ndarray] = []
+        self.obs_velocities = np.zeros((0, 2))
+        self._n_fixed_obstacles = 0
         self.render_mode = render_mode
         self.current = np.zeros(2)
 
         self.action_space = spaces.Discrete(3)
         n_obs = N_RAYS + 5 + (2 if observe_current else 0) + (2 if observe_route else 0)
-        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(n_obs,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(n_obs * self.frame_stack,), dtype=np.float32)
 
         # Ángulos de los rayos relativos al rumbo del barco: de -90° (izq) a +90° (der)
         self._ray_offsets = np.linspace(-RAY_FOV / 2, RAY_FOV / 2, N_RAYS)
@@ -184,6 +197,8 @@ class BoatEnv(gym.Env):
         self.omega = 0.0
         self.speed = SPEED
         self.current = self._episode_current(options)
+        self.obs_velocities = self._episode_obstacle_velocities(options)
+        self._obstacles_origin = (self.obs_centers.copy(), self.obs_velocities.copy())
 
         self.steps = 0
         self.prev_dist = float(np.linalg.norm(to_goal))
@@ -192,7 +207,7 @@ class BoatEnv(gym.Env):
         self.last_event = None
         self.trail = [self.pos.copy()]
 
-        obs = self._get_obs()
+        obs = self._stacked(self._get_obs(), "reset")
         if self.render_mode == "human":
             self.render()
         return obs, {}
@@ -203,6 +218,7 @@ class BoatEnv(gym.Env):
         centers = [c for c, _ in fixed]
         radii = [r for _, r in fixed]
         target = len(fixed) + n_obs
+        self._n_fixed_obstacles = len(fixed)
         attempts = 0
         while len(centers) < target and attempts < 1000:
             attempts += 1
@@ -249,6 +265,14 @@ class BoatEnv(gym.Env):
             )
         self.obs_radii = np.clip(arr[:, 2], *EDIT_RADIUS_LIMITS)
         self.obs_centers = np.clip(arr[:, :2], 0.0, WORLD_SIZE)
+        # Las velocidades siguen a los obstáculos por posición en la lista; los nuevos empiezan quietos
+        velocities = np.zeros((len(arr), 2))
+        keep = min(len(arr), len(self.obs_velocities))
+        velocities[:keep] = self.obs_velocities[:keep]
+        self.obs_velocities = velocities
+        self._n_fixed_obstacles = min(self._n_fixed_obstacles, len(arr))
+        # Editar redefine el escenario: "repetir travesía" parte de aquí
+        self._obstacles_origin = (self.obs_centers.copy(), self.obs_velocities.copy())
 
     def set_goal(self, goal) -> None:
         """Mueve la meta durante el episodio sin romper la recompensa por progreso."""
@@ -258,7 +282,13 @@ class BoatEnv(gym.Env):
 
     def observe(self) -> np.ndarray:
         """Observación del estado actual (útil tras editar el escenario sin dar un paso)."""
-        return self._get_obs()
+        return self._stacked(self._get_obs(), "replace")
+
+    def initial_obstacles(self) -> tuple[list[list[float]], list[list[float]]]:
+        """Obstáculos [[x, y, r]] y velocidades [[vx, vy]] del inicio del episodio (o de la última edición)."""
+        centers, velocities = self._obstacles_origin
+        obstacles = [[*c, r] for c, r in zip(centers.tolist(), self.obs_radii.tolist(), strict=True)]
+        return obstacles, velocities.tolist()
 
     def get_state(self) -> dict:
         """Estado completo para pintar fuera de pygame (frontend web). Solo tipos JSON.
@@ -281,8 +311,9 @@ class BoatEnv(gym.Env):
             "goal": {"x": round(float(self.goal[0]), 3), "y": round(float(self.goal[1]), 3), "radius": GOAL_RADIUS},
             "current": {"x": round(float(self.current[0]), 3), "y": round(float(self.current[1]), 3)},
             "obstacles": [
-                {"x": round(float(c[0]), 3), "y": round(float(c[1]), 3), "radius": round(float(r), 3)}
-                for c, r in zip(self.obs_centers, self.obs_radii, strict=True)
+                {"x": round(float(c[0]), 3), "y": round(float(c[1]), 3), "radius": round(float(r), 3),
+                 "vx": round(float(v[0]), 3), "vy": round(float(v[1]), 3)}
+                for c, r, v in zip(self.obs_centers, self.obs_radii, self.obs_velocities, strict=True)
             ],
             "rays": [
                 {"angle": round(float(a), 4), "distance": round(float(d), 3)}
@@ -301,6 +332,8 @@ class BoatEnv(gym.Env):
         # reproduce bit a bit los escenarios de siempre
         self.pos = self.pos + self.speed * DT * np.array([math.cos(self.heading), math.sin(self.heading)])
         self.pos = self.pos + self.current * DT
+        if np.any(self.obs_velocities):
+            self._move_obstacles()
         self.steps += 1
         self.trail.append(self.pos.copy())
 
@@ -326,7 +359,7 @@ class BoatEnv(gym.Env):
         self.last_event = event
         info = {"is_success": event == "goal", "event": event}
 
-        obs = self._get_obs()
+        obs = self._stacked(self._get_obs(), "push")
         if self.render_mode == "human":
             self.render()
         return obs, float(reward), terminated, truncated, info
@@ -459,6 +492,46 @@ class BoatEnv(gym.Env):
         forward = np.array([math.cos(self.heading), math.sin(self.heading)])
         starboard = np.array([-forward[1], forward[0]])  # 90° a la derecha (eje y hacia abajo)
         return [float(self.current @ forward) / CURRENT_NORM, float(self.current @ starboard) / CURRENT_NORM]
+
+    def _episode_obstacle_velocities(self, options: dict) -> np.ndarray:
+        """Velocidad de cada roca durante el episodio. Sin movimiento no se consume azar."""
+        n = len(self.obs_radii)
+        if "obstacle_velocities" in options:
+            velocities = np.asarray(options["obstacle_velocities"], dtype=np.float64).reshape(-1, 2)
+            if len(velocities) != n or not np.all(np.isfinite(velocities)):
+                raise ValueError(f"'obstacle_velocities' debe tener {n} pares [vx, vy] finitos")
+            return velocities
+        velocities = np.zeros((n, 2))
+        lo, hi = self.obstacle_speed
+        if hi <= 0 or "obstacles" in options:
+            return velocities
+        for i in range(self._n_fixed_obstacles, n):  # las rocas de la U no se mueven
+            speed = self.np_random.uniform(lo, hi)
+            angle = self.np_random.uniform(-math.pi, math.pi)
+            velocities[i] = speed * np.array([math.cos(angle), math.sin(angle)])
+        return velocities
+
+    def _move_obstacles(self) -> None:
+        """Movimiento rectilíneo con rebote elástico en los bordes del mapa."""
+        self.obs_centers = self.obs_centers + self.obs_velocities * DT
+        for axis in (0, 1):
+            low = self.obs_centers[:, axis] < self.obs_radii
+            high = self.obs_centers[:, axis] > WORLD_SIZE - self.obs_radii
+            self.obs_velocities[low | high, axis] *= -1
+            self.obs_centers[:, axis] = np.clip(self.obs_centers[:, axis], self.obs_radii, WORLD_SIZE - self.obs_radii)
+
+    def _stacked(self, frame: np.ndarray, how: str) -> np.ndarray:
+        """Frame stacking: "reset" llena la memoria con el primer instante, "push" añade uno nuevo y
+        "replace" corrige el último (tras editar el escenario). Sin memoria (N=1) devuelve el instante tal cual."""
+        if self.frame_stack == 1:
+            return frame
+        if how == "reset" or not self._frames:
+            self._frames = [frame] * self.frame_stack
+        elif how == "push":
+            self._frames = [*self._frames[1:], frame]
+        else:
+            self._frames = [*self._frames[:-1], frame]
+        return np.concatenate(self._frames)
 
     def _episode_current(self, options: dict) -> np.ndarray:
         """Corriente fija durante el episodio. Sin corriente no se consume azar: el mar en calma no cambia."""

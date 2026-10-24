@@ -70,7 +70,10 @@ export type Circle = { x: number; y: number; radius: number };
 export type Vector = { x: number; y: number };
 
 /** Sensores extra con los que se entrenó un modelo. */
-export type SensorId = "current" | "route";
+export type SensorId = "current" | "route" | "memory";
+
+/** Roca: círculo + velocidad (u/s); (0, 0) si está quieta. */
+export type Obstacle = Circle & { vx: number; vy: number };
 
 export type Ray = { angle: number; distance: number };
 
@@ -89,7 +92,7 @@ export type SimState = {
   event: EpisodeEvent | null;
   boat: Boat;
   goal: Circle;
-  obstacles: Circle[];
+  obstacles: Obstacle[];
   /** Corriente del episodio en u/s; (0, 0) si no hay. */
   current: Vector;
   rays: Ray[];

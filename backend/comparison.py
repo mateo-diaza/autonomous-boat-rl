@@ -35,7 +35,7 @@ from backend.schemas import (
     SetSpeedCmd,
     StepCmd,
 )
-from training.problems import DEFAULT_PROBLEM, get_problem
+from training.problems import DEFAULT_PROBLEM, get_sea
 
 
 class ScoreKeeper:
@@ -100,8 +100,9 @@ def run_tournament(
 
 class ComparisonSession:
     def __init__(self, problem: str = DEFAULT_PROBLEM, seed: int | None = None):
-        self.problem = problem
-        self.lanes: dict[LaneId, Lane] = {lane_id: Lane(get_problem(problem).env_kwargs) for lane_id in LANE_IDS}
+        sea = get_sea(problem)
+        self.problem = sea.id
+        self.lanes: dict[LaneId, Lane] = {lane_id: Lane(sea.env_kwargs) for lane_id in LANE_IDS}
         self.playback = Playback()
         self.scores = {lane_id: ScoreKeeper() for lane_id in LANE_IDS}
         self.tournament_running = False
@@ -131,16 +132,17 @@ class ComparisonSession:
 
     def set_problem(self, problem: str) -> None:
         """Otras condiciones del mar para ambos barcos (conservan su modelo) y escenario nuevo."""
-        env_kwargs = get_problem(problem).env_kwargs  # ValueError si no existe
+        sea = get_sea(problem)  # ValueError si no existe; las variantes de recompensa navegan en su mar
+        env_kwargs = sea.env_kwargs
         for lane in self.lanes.values():
             lane.reconfigure(env_kwargs)
-        self.problem = problem
+        self.problem = sea.id
         self.new_scenario()
 
     def env_kwargs(self) -> dict:
         """Parámetros actuales del entorno (problema + rocas), para el torneo."""
         env = self.lanes[LANE_IDS[0]].env
-        return {**get_problem(self.problem).env_kwargs, "n_obstacles": env.n_obstacles}  # sin sensores
+        return {**get_sea(self.problem).env_kwargs, "n_obstacles": env.n_obstacles}  # sin sensores
 
     # -------------------------------------------------------------------- Modelo
     def set_model(self, lane_id: LaneId, model: BaseAlgorithm, ref: ModelRef, sensors: dict | None = None) -> None:

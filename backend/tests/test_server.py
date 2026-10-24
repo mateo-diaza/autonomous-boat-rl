@@ -154,10 +154,10 @@ def test_set_problem_keeps_model_and_changes_env(models_dir):
     s = SimulationSession(seed=0)
     model = load_model(models_dir / RUN / "final.zip", "ppo")
     s.set_model(model, ModelRef(run_id=RUN, checkpoint_id="final", algo="ppo"))
-    s.apply(SetProblemCmd(type="set_problem", problem="sparse"))
+    s.apply(SetProblemCmd(type="set_problem", problem="current"))
     status = s.state_msg().status
-    assert status.problem == "sparse" and status.model is not None
-    assert s.lane.env.reward_mode == "sparse" and s.state_msg().sim.action_probs is not None
+    assert status.problem == "current" and status.model is not None
+    assert s.lane.env.current_speed[1] > 0 and s.state_msg().sim.action_probs is not None
 
 
 def test_ws_unknown_problem_returns_error(client):
@@ -276,3 +276,26 @@ def test_duplicate_labels_are_disambiguated():
                           obstacles="4-10", total_steps=1, n_checkpoints=1, best_success_rate=None)
 
     assert [r.label for r in _unique_labels([run("a"), run("b")])] == ["Corrientes", "Corrientes (2)"]
+
+
+def test_restart_reproduces_moving_rocks():
+    s = SimulationSession(seed=3)
+    s.apply(SetProblemCmd(type="set_problem", problem="moving"))
+    start = s.state_msg().sim.obstacles
+    for _ in range(15):
+        s.apply(StepCmd(type="step"))
+    assert s.state_msg().sim.obstacles != start  # las rocas se han movido
+    s.apply(RestartCmd(type="restart"))
+    assert s.state_msg().sim.obstacles == start
+
+
+def test_sea_selector_lists_only_distinct_seas(client):
+    ids = [p["id"] for p in client.get("/api/problems").json()]
+    assert "sparse" not in ids and "u_trap_path" not in ids  # solo cambian la recompensa: mismo mar
+    assert ids[:2] == ["base", "current"] and "u_trap" in ids
+
+
+def test_reward_variant_navigates_in_its_sea():
+    s = SimulationSession(seed=0)
+    s.apply(SetProblemCmd(type="set_problem", problem="u_trap_path"))
+    assert s.state_msg().status.problem == "u_trap" and s.lane.env.reward_mode == "shaped"

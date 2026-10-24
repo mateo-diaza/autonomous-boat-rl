@@ -235,3 +235,57 @@ def test_route_sensor_matches_goal_direction_in_open_water():
     env = BoatEnv(n_obstacles=0, observe_route=True)
     obs, _ = env.reset(seed=0, options={"start": [20, 50], "goal": [80, 50], "heading": 0.0, "obstacles": []})
     assert math.atan2(obs[-2], obs[-1]) == pytest.approx(0.0, abs=0.05)
+
+
+def test_calm_obstacles_do_not_move():
+    env = BoatEnv(n_obstacles=6)
+    env.reset(seed=0)
+    before = env.obs_centers.copy()
+    env.step(1)
+    np.testing.assert_array_equal(env.obs_centers, before)
+
+
+def test_moving_obstacles_move_bounce_and_stay_inside():
+    env = BoatEnv(n_obstacles=0, obstacle_speed=(3.0, 3.0))
+    env.reset(seed=0, options={"start": [10, 10], "goal": [90, 90], "heading": 0.0,
+                               "obstacles": [[95, 50, 3]], "obstacle_velocities": [[30.0, 0.0]]})
+    env.step(1)  # 30 u/s * 0.1 s = 3 u -> choca con el borde derecho y rebota
+    assert env.obs_centers[0, 0] <= 100 - 3 and env.obs_velocities[0, 0] < 0
+    assert env.get_state()["obstacles"][0]["vx"] < 0
+
+
+def test_restart_options_reproduce_moving_scenario():
+    env = BoatEnv(n_obstacles=(4, 8), obstacle_speed=(2.0, 4.0))
+    env.reset(seed=5)
+    obstacles, velocities = env.initial_obstacles()
+    for _ in range(20):
+        env.step(1)
+    replay = BoatEnv(n_obstacles=(4, 8), obstacle_speed=(2.0, 4.0))
+    replay.reset(seed=5, options={"start": [50, 50], "goal": [90, 90], "heading": 0.0,
+                                  "obstacles": obstacles, "obstacle_velocities": velocities})
+    np.testing.assert_allclose(replay.obs_velocities, np.array(velocities))
+    np.testing.assert_allclose(replay.obs_centers, np.array(obstacles)[:, :2])
+
+
+def test_frame_stack_keeps_last_frames():
+    env = BoatEnv(n_obstacles=0, frame_stack=3)
+    assert env.observation_space.shape == (17 * 3,)
+    obs, _ = env.reset(seed=0, options={"start": [20, 50], "goal": [80, 50], "heading": 0.0, "obstacles": []})
+    frames = obs.reshape(3, 17)
+    np.testing.assert_array_equal(frames[0], frames[2])  # al empezar, la memoria repite el primer instante
+    obs2, *_ = env.step(1)
+    frames2 = obs2.reshape(3, 17)
+    np.testing.assert_array_equal(frames2[1], frames[2])  # el instante anterior se desplaza
+    assert not np.array_equal(frames2[2], frames2[1])
+    with pytest.raises(ValueError):
+        BoatEnv(frame_stack=0)
+
+
+def test_memory_counts_as_sensor_only_when_above_one():
+    from training.problems import model_display_name, sensor_kwargs
+
+    assert sensor_kwargs({"frame_stack": 1}) == {}
+    assert sensor_kwargs({"frame_stack": 4}) == {"frame_stack": 4}
+    memory = {"problem": "moving", "env_kwargs": {"frame_stack": 4}}
+    assert model_display_name(memory)[0] == "Rocas a la deriva + memoria"
+    assert model_display_name({"problem": "moving"}) == ("Rocas a la deriva", "rocas en movimiento · sin memoria")
