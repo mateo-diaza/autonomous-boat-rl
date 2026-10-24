@@ -47,3 +47,6 @@ async def _receive_commands(conn: Connection, session: SimulationSession, models
             await conn.send(ErrorMsg(message=f"Comando no válido: {first_error(e)}"))
         except (LookupError, ValueError) as e:
             await conn.send(ErrorMsg(message=str(e)))
+        except Exception:
+            log.exception("Error inesperado procesando un comando")
+            await conn.send(ErrorMsg(message="No se ha podido aplicar el cambio por un error interno."))

@@ -198,3 +198,54 @@ def test_ws_loads_sensor_model_from_its_config(client):
         ws.send_json({"type": "load_model", "run_id": SENSOR_RUN, "checkpoint_id": "final"})
         state = ws.receive_json()
         assert state["status"]["model"]["sensors"] == ["current"] and len(state["sim"]["action_probs"]) == 3
+
+
+def test_switching_between_models_with_different_sensors(models_dir):
+    """Regresión: al cambiar de sensores, el modelo anterior no debe evaluarse con la observación nueva."""
+    plain = load_model(models_dir / RUN / "final.zip", "ppo")
+    sensor = load_model(models_dir / SENSOR_RUN / "final.zip", "ppo")
+    s = SimulationSession(seed=2)
+    s.apply(SetProblemCmd(type="set_problem", problem="current"))
+    for model, run, sensors in [(plain, RUN, {}), (sensor, SENSOR_RUN, {"observe_current": True}),
+                                (plain, RUN, {}), (sensor, SENSOR_RUN, {"observe_current": True})]:
+        s.set_model(model, ModelRef(run_id=run, checkpoint_id="final", algo="ppo"), sensors)
+        s.apply(StepCmd(type="step"))
+        assert len(s.state_msg().sim.action_probs) == 3
+
+
+def test_unexpected_tick_error_pauses_and_warns_without_closing():
+    import asyncio
+
+    from backend.playback import Playback
+    from backend.routes._ws import SIMULATION_ERROR, run_loop
+
+    class FlakySession:
+        def __init__(self):
+            self.playback = Playback()
+            self.playback.playing = True
+            self.calls = 0
+
+        def tick(self, now):
+            self.calls += 1
+            if self.calls == 2:
+                raise RuntimeError("fallo inesperado")
+            return []
+
+    class FakeConnection:
+        def __init__(self):
+            self.sent = []
+
+        async def send(self, msg):
+            self.sent.append(msg)
+
+    async def scenario():
+        session, conn = FlakySession(), FakeConnection()
+        task = asyncio.create_task(run_loop(conn, session))
+        await asyncio.sleep(0.25)
+        task.cancel()
+        return session, conn
+
+    session, conn = asyncio.run(scenario())
+    assert session.calls > 2  # el bucle sigue vivo tras el fallo
+    assert session.playback.playing is False
+    assert [m.message for m in conn.sent] == [SIMULATION_ERROR]

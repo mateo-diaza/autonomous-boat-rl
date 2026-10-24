@@ -77,6 +77,9 @@ class Lane:
         Si los sensores cambian, se reconstruye el entorno y se restaura el mismo escenario desde la salida.
         Lanza ValueError si el modelo no encaja con la observación (no debería pasar si `sensors` es correcto).
         """
+        # El modelo anterior se retira ANTES de cambiar los sensores: al restaurar el escenario se recalculan las
+        # probabilidades, y el modelo viejo no puede evaluar una observación con otra forma
+        self.model, self.model_ref = None, None
         self._set_sensors(sensors or {})
         expected, got = model.observation_space.shape, self.env.observation_space.shape
         if expected != got:

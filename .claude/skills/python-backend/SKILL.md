@@ -110,6 +110,11 @@ async def sim_ws(ws: WebSocket):
 - CORS solo para `http://localhost:3000` y `http://127.0.0.1:3000`.
 - CORS **no** protege WebSockets: `/ws/sim` comprueba la cabecera `Origin` contra la misma lista.
 - Todo cambio de estado de la sesión debe marcarla como `_dirty`, o el cliente no recibirá el estado nuevo.
+- Un error inesperado nunca debe tumbar el WebSocket: `run_loop` y los receptores de comandos capturan
+  `Exception`, lo registran con `log.exception`, pausan la simulación y envían un `ErrorMsg` legible.
+- Al cambiar de modelo con sensores distintos, retirar el modelo anterior ANTES de reconstruir el entorno:
+  cualquier recálculo (probabilidades del "cerebro") con el modelo viejo y la observación nueva revienta.
+  Probar siempre el cambio entre modelos de distinta observación, no solo cargarlos desde "sin modelo".
 - Rutas con `pathlib.Path`, nunca strings concatenados.
 - Nada de secretos (no hay); si apareciera alguno, va en `.env` ignorado por git.
 

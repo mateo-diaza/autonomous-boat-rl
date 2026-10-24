@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Protocol
 
@@ -12,10 +13,13 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 
 from backend.config import CORS_ORIGINS, SIM_HZ, SPEED_LIMITS
 from backend.models_cache import load_model
+from backend.playback import Playback
 from backend.runs import checkpoint_path, read_config
-from backend.schemas import ModelRef, WorldInfo
+from backend.schemas import ErrorMsg, ModelRef, WorldInfo
 from training.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
 from training.problems import run_env_kwargs, sensor_kwargs, sensor_names
+
+log = logging.getLogger(__name__)
 
 WORLD = WorldInfo(
     size=WORLD_SIZE, ray_range=RAY_RANGE, n_rays=N_RAYS, dt=DT, max_steps=MAX_STEPS,
@@ -24,7 +28,13 @@ WORLD = WorldInfo(
 
 
 class TickingSession(Protocol):
+    playback: Playback
+
     def tick(self, now: float) -> list[BaseModel]: ...
+
+
+#: Aviso al usuario si algo inesperado falla dentro de la simulación (el detalle técnico va al log)
+SIMULATION_ERROR = "Algo ha fallado en la simulación y se ha pausado. Prueba con «Nuevo escenario» o recarga la página."
 
 
 class Connection:
@@ -55,7 +65,14 @@ async def run_loop(conn: Connection, session: TickingSession) -> None:
     period = 1.0 / SIM_HZ
     next_tick = loop.time()
     while True:
-        for msg in session.tick(loop.time()):
+        try:
+            messages = session.tick(loop.time())
+        except Exception:
+            # Un fallo inesperado no debe tumbar la conexión: se registra, se pausa y se avisa
+            log.exception("Error en el tick de la simulación")
+            session.playback.playing = False
+            messages = [ErrorMsg(message=SIMULATION_ERROR)]
+        for msg in messages:
             await conn.send(msg)
         next_tick += period
         delay = next_tick - loop.time()
