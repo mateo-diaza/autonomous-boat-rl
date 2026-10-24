@@ -18,6 +18,15 @@ pip install -r requirements.txt
 - `models/` — checkpoints de los agentes (no versionados)
 - `logs/` — logs de TensorBoard (no versionados)
 
+## Demo web (backend + frontend)
+
+Requisitos adicionales: Node.js ≥ 20.9 y pnpm.
+
+```bash
+pnpm install && pnpm --dir frontend install   # una sola vez
+pnpm dev                                      # API en :8000 + web en http://localhost:3000
+```
+
 ## Uso
 
 Todos los comandos se lanzan desde la raíz del repo con el venv activado.

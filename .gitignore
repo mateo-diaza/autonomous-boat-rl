@@ -11,3 +11,10 @@ logs/*
 .DS_Store
 .idea/
 .vscode/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/next-env.d.ts
+.pytest_cache/
+.ruff_cache/

@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Tema "Carta náutica" (ver .claude/skills/ui-design). Solo tema claro por ahora.
+ * Contrastes medidos contra --background; no cambiar un color sin volver a medirlo.
+ * El canvas lee estos mismos tokens con getComputedStyle: son la única fuente de color.
+ */
+
+@theme inline {
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-heading: var(--font-source-serif);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Propios de la carta náutica */
+  --color-vermilion: var(--vermilion);
+  --color-vermilion-text: var(--vermilion-text);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-water: var(--water);
+  --color-water-grid: var(--water-grid);
+  --color-rock: var(--rock);
+  --color-rock-stroke: var(--rock-stroke);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.5);
+  --radius-4xl: calc(var(--radius) * 3);
+}
+
+:root {
+  color-scheme: light;
+
+  --background: #f4ecd8;          /* papel */
+  --foreground: #1d2b45;          /* tinta            12.0:1 */
+  --card: #fbf6e9;                /* cartela */
+  --card-foreground: #1d2b45;
+  --popover: #fbf6e9;
+  --popover-foreground: #1d2b45;
+  --primary: #1d2b45;             /* botón principal: fondo tinta */
+  --primary-foreground: #f4ecd8;
+  --secondary: #ebe1c6;           /* papel envejecido */
+  --secondary-foreground: #1d2b45;
+  --muted: #ebe1c6;
+  --muted-foreground: #5e5844;    /* texto secundario  6.0:1 */
+  --accent: #e6dcc0;              /* shadcn: fondo hover/selección (NO es el color de marca) */
+  --accent-foreground: #1d2b45;
+  --destructive: #8e1f4f;         /* magenta de carta: peligro */
+  --border: #c9b88f;              /* filete decorativo (1.7:1, solo decorativo) */
+  --input: #8a7a55;               /* borde de controles 3.6:1 */
+  --ring: #1d2b45;
+  --radius: 0.25rem;
+
+  --chart-1: #1d2b45;
+  --chart-2: #b3412e;
+  --chart-3: #276b4d;
+  --chart-4: #8f5a14;
+  --chart-5: #5e5844;
+
+  --vermilion: #b3412e;           /* el barco y lo seleccionado  4.8:1 */
+  --vermilion-text: #9c3524;      /* texto en bermellón          6.1:1 */
+  --success: #276b4d;             /* arribada                    5.4:1 */
+  --danger: #8e1f4f;              /* encallado / peligro         >7:1 */
+  --warning: #8f5a14;             /* tiempo agotado              4.9:1 */
+  --water: #dfe9e4;
+  --water-grid: #b8cbc4;
+  --rock: #a8957a;
+  --rock-stroke: #5c4a33;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3 {
+    @apply font-heading;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  /* Cartela: doble filete (exterior tinta, interior filete) como en las cartas náuticas */
+  .cartouche {
+    @apply bg-card text-card-foreground rounded-sm;
+    border: 1px solid var(--foreground);
+    box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--border);
+  }
+
+  .cartouche-title {
+    @apply font-heading text-lg;
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
