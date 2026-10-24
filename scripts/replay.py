@@ -8,6 +8,7 @@ compara directamente la evolución de la política.
 Uso:
     python -m scripts.replay models/dqn_xxx                 # todos los checkpoints
     python -m scripts.replay models/dqn_xxx --every 2       # uno de cada dos
+    python -m scripts.replay models/ppo_demo --upto 25000   # solo el tramo donde aprende
     python -m scripts.replay models/dqn_xxx/best/best_model.zip --episodes 10
 """
 
@@ -25,14 +26,15 @@ from scripts.train import parse_obstacles
 ALGOS = {"dqn": DQN, "ppo": PPO}
 
 
-def find_checkpoints(path: Path):
+def find_checkpoints(path: Path, upto: int | None = None):
     """Devuelve [(etiqueta, ruta_zip)] ordenados por número de pasos."""
     if path.is_file():
         return [(path.stem, path)]
     ckpts = []
     for f in (path / "checkpoints").glob("*_steps.zip"):
         steps = int(re.search(r"_(\d+)_steps", f.name).group(1))
-        ckpts.append((steps, f))
+        if upto is None or steps <= upto:
+            ckpts.append((steps, f))
     ckpts.sort()
     out = [(f"{s // 1000}k pasos", f) for s, f in ckpts]
     if (path / "final.zip").exists():
@@ -50,6 +52,7 @@ def main():
     parser.add_argument("path", type=Path, help="carpeta del run o un .zip concreto")
     parser.add_argument("--episodes", type=int, default=3, help="episodios por checkpoint")
     parser.add_argument("--every", type=int, default=1, help="mostrar uno de cada N checkpoints")
+    parser.add_argument("--upto", type=int, default=None, help="solo checkpoints hasta N pasos (+ el final)")
     parser.add_argument("--obstacles", default=None, help="por defecto, los del entrenamiento")
     parser.add_argument("--seed", type=int, default=12345)
     parser.add_argument("--fps", type=int, default=60)
@@ -57,7 +60,7 @@ def main():
 
     cfg = load_config(args.path)
     algo_cls = ALGOS[cfg["algo"]]
-    ckpts = find_checkpoints(args.path)
+    ckpts = find_checkpoints(args.path, args.upto)
     if len(ckpts) > 1:
         ckpts = ckpts[::args.every] if ckpts[-1] in ckpts[::args.every] else ckpts[::args.every] + [ckpts[-1]]
 
