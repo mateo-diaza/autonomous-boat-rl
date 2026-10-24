@@ -22,6 +22,7 @@ import pygame
 from stable_baselines3 import DQN, PPO
 
 from training.boat_env import BoatEnv
+from training.problems import run_env_kwargs
 from training.train import parse_obstacles
 
 ALGOS = {"dqn": DQN, "ppo": PPO}
@@ -69,7 +70,11 @@ def main():
     if len(ckpts) > 1:
         ckpts = ckpts[::args.every] if ckpts[-1] in ckpts[::args.every] else ckpts[::args.every] + [ckpts[-1]]
 
-    env = BoatEnv(n_obstacles=parse_obstacles(args.obstacles or cfg["obstacles"]), render_mode="human")
+    # Mismo entorno que en el entrenamiento (problema incluido); --obstacles solo cambia las rocas
+    env_kwargs = run_env_kwargs(cfg)
+    if args.obstacles:
+        env_kwargs["n_obstacles"] = parse_obstacles(args.obstacles)
+    env = BoatEnv(**env_kwargs, render_mode="human")
     env.metadata["render_fps"] = args.fps
 
     for label, ckpt in ckpts:

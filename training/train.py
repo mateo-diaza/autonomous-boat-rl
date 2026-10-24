@@ -7,7 +7,7 @@ Estructura de salida:
     models/<run>/final.zip
     logs/<run>_1/                         TensorBoard (tensorboard --logdir logs)
 
-Uso: python -m training.train --algo ppo --obstacles 4-10 --run ppo_progresion
+Uso: python -m training.train --algo ppo --problem base --run ppo
 
 Por defecto se entrena poco y se guardan muchos checkpoints (~30): el agente aprende pronto y lo
 interesante para la demo es ver la progresión, no exprimir los últimos puntos de rendimiento.
@@ -24,6 +24,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from training.boat_env import BoatEnv
 from training.paths import LOGS_DIR, MODELS_DIR
+from training.problems import DEFAULT_PROBLEM, PROBLEMS, get_problem
 
 
 def parse_obstacles(s: str):
@@ -45,6 +46,11 @@ DEFAULTS = {
 
 
 EVAL_EPISODES = 40  # más episodios = curva de aprendizaje menos ruidosa
+
+
+def format_obstacles(n_obstacles: int | tuple[int, int]) -> str:
+    """(4, 10) -> '4-10'; 6 -> '6' (formato legible que se guarda en config.json)."""
+    return f"{n_obstacles[0]}-{n_obstacles[1]}" if isinstance(n_obstacles, (tuple, list)) else str(n_obstacles)
 
 
 def build_model(algo: str, env, seed: int, tb_log: str, n_steps: int, lr: float | None, n_epochs: int):
@@ -81,7 +87,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo", choices=["dqn", "ppo"], default="ppo")
     parser.add_argument("--steps", type=int, default=None, help="por defecto: 30k (ppo) / 50k (dqn)")
-    parser.add_argument("--obstacles", default="4-10", help="'6' fijo o '4-10' aleatorio por episodio")
+    parser.add_argument("--problem", choices=list(PROBLEMS), default=DEFAULT_PROBLEM,
+                        help="variante de dificultad del entorno (ver training/problems.py)")
+    parser.add_argument("--obstacles", default=None,
+                        help="sobrescribe las rocas del problema: '6' fijo o '4-10' aleatorio por episodio")
     parser.add_argument("--n-envs", type=int, default=None, help="por defecto: 4")
     parser.add_argument("--n-steps", type=int, default=None,
                         help="PPO: pasos por entorno entre actualizaciones (por defecto 256)")
@@ -101,16 +110,18 @@ def main():
     lr = args.lr or defaults.get("lr")
     # En PPO, un checkpoint por actualización: entre actualizaciones la red no cambia y saldrían repetidos
     ckpt_freq = args.ckpt_freq or defaults.get("ckpt_freq") or n_envs * n_steps
-    obstacles = parse_obstacles(args.obstacles)
+    env_kwargs = dict(get_problem(args.problem).env_kwargs)
+    if args.obstacles:
+        env_kwargs["n_obstacles"] = parse_obstacles(args.obstacles)
     run = args.run or f"{args.algo}_{time.strftime('%Y%m%d_%H%M%S')}"
     run_dir = MODELS_DIR / run
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(json.dumps(
-        {"algo": args.algo, "obstacles": args.obstacles, "steps": steps, "seed": args.seed,
+        {"algo": args.algo, "problem": args.problem, "env_kwargs": env_kwargs,
+         "obstacles": format_obstacles(env_kwargs["n_obstacles"]), "steps": steps, "seed": args.seed,
          "n_envs": n_envs, "n_steps": n_steps or None, "ckpt_freq": ckpt_freq,
          "lr": lr, "n_epochs": n_epochs if args.algo == "ppo" else None}, indent=2))
 
-    env_kwargs = dict(n_obstacles=obstacles)
     env = make_vec_env(BoatEnv, n_envs=n_envs, seed=args.seed, env_kwargs=env_kwargs,
                        vec_env_cls=SubprocVecEnv if n_envs > 1 else None)
     eval_env = make_vec_env(BoatEnv, n_envs=1, seed=args.seed + 10_000, env_kwargs=env_kwargs)

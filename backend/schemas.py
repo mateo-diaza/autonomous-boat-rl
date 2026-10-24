@@ -16,6 +16,7 @@ from training.boat_env import EDIT_RADIUS_LIMITS, WORLD_SIZE
 Coord = Annotated[float, Field(ge=0, le=WORLD_SIZE)]
 Radius = Annotated[float, Field(ge=EDIT_RADIUS_LIMITS[0], le=EDIT_RADIUS_LIMITS[1])]
 RunId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]+$", max_length=100)]
+ProblemId = Annotated[str, Field(pattern=r"^[a-z_]+$", max_length=40)]
 CheckpointId = Annotated[str, Field(pattern=r"^(\d+|final|best)$")]
 Event = Literal["goal", "crash", "timeout"]
 
@@ -33,9 +34,16 @@ class CurvePoint(BaseModel):
     success_rate: float | None
 
 
+class ProblemInfo(BaseModel):
+    id: ProblemId
+    title: str
+    description: str
+
+
 class RunSummary(BaseModel):
     id: RunId
     algo: Literal["dqn", "ppo"]
+    problem: ProblemId          # en qué problema se entrenó
     obstacles: str
     total_steps: int
     n_checkpoints: int
@@ -98,6 +106,7 @@ class SimState(BaseModel):
 
 
 class SessionStatus(BaseModel):
+    problem: ProblemId
     playing: bool
     speed: float
     deterministic: bool
@@ -202,6 +211,13 @@ class MoveObstacleCmd(BaseModel):
     y: Coord
 
 
+class SetProblemCmd(BaseModel):
+    """Cambia las condiciones del mar (el problema) y empieza un escenario nuevo; el modelo se conserva."""
+
+    type: Literal["set_problem"]
+    problem: ProblemId
+
+
 class SetGoalCmd(BaseModel):
     type: Literal["set_goal"]
     x: Coord
@@ -211,7 +227,7 @@ class SetGoalCmd(BaseModel):
 ClientCommand = Annotated[
     LoadModelCmd | UnloadModelCmd | PlayCmd | PauseCmd | StepCmd | SetSpeedCmd | SetDeterministicCmd
     | SetAutoResetCmd | NewScenarioCmd | RestartCmd | AddObstacleCmd | RemoveObstacleCmd | MoveObstacleCmd
-    | SetGoalCmd,
+    | SetGoalCmd | SetProblemCmd,
     Field(discriminator="type"),
 ]
 command_adapter: TypeAdapter[ClientCommand] = TypeAdapter(ClientCommand)
@@ -241,6 +257,7 @@ class LaneState(BaseModel):
 
 
 class TournamentResult(BaseModel):
+    problem: ProblemId
     episodes: int
     seed: int
     scores: list[LaneScore]            # en el orden de LANE_IDS
@@ -248,6 +265,7 @@ class TournamentResult(BaseModel):
 
 
 class CompareStatus(BaseModel):
+    problem: ProblemId
     playing: bool
     speed: float
     auto_reset: bool
@@ -310,7 +328,8 @@ class RunTournamentCmd(BaseModel):
 
 CompareCommand = Annotated[
     CompareLoadModelCmd | CompareUnloadModelCmd | SetLaneDeterministicCmd | PlayCmd | PauseCmd | StepCmd
-    | SetSpeedCmd | SetAutoResetCmd | NewScenarioCmd | RestartCmd | ResetScoresCmd | RunTournamentCmd,
+    | SetSpeedCmd | SetAutoResetCmd | NewScenarioCmd | RestartCmd | ResetScoresCmd | RunTournamentCmd
+    | SetProblemCmd,
     Field(discriminator="type"),
 ]
 compare_command_adapter: TypeAdapter[CompareCommand] = TypeAdapter(CompareCommand)

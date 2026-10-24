@@ -100,3 +100,36 @@ def test_observe_reflects_live_edits():
     np.testing.assert_array_equal(env.observe(), obs)
     env.set_obstacles([[60, 50, 3]])
     assert env.observe()[:12].min() < obs[:12].min()
+
+
+def test_sparse_reward_only_at_the_end():
+    env = BoatEnv(n_obstacles=0, reward_mode="sparse")
+    env.reset(seed=0, options={"start": [50, 50], "goal": [56, 50], "heading": 0.0})
+    rewards, terminated = [], False
+    while not terminated:
+        _, reward, terminated, _, info = env.step(1)
+        rewards.append(reward)
+    assert info["event"] == "goal" and rewards[-1] == 100.0 and all(r == 0.0 for r in rewards[:-1])
+
+
+def test_invalid_reward_mode_raises():
+    with pytest.raises(ValueError):
+        BoatEnv(reward_mode="mucha")
+
+
+def test_every_problem_builds_a_valid_env():
+    from stable_baselines3.common.env_checker import check_env
+
+    from training.problems import PROBLEMS, make_env
+
+    for problem_id in PROBLEMS:
+        check_env(make_env(problem_id), warn=True)
+
+
+def test_run_env_kwargs_supports_old_and_new_configs():
+    from training.problems import run_env_kwargs
+
+    assert run_env_kwargs({"obstacles": "4-10"}) == {"n_obstacles": (4, 10)}
+    assert run_env_kwargs({"obstacles": "6"}) == {"n_obstacles": 6}
+    new = {"env_kwargs": {"n_obstacles": [4, 10], "reward_mode": "sparse"}}
+    assert run_env_kwargs(new) == {"n_obstacles": (4, 10), "reward_mode": "sparse"}

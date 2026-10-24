@@ -21,9 +21,13 @@ export type CurvePoint = {
   success_rate: number | null;
 };
 
+export type ProblemInfo = { id: string; title: string; description: string };
+
 export type RunSummary = {
   id: string;
   algo: Algo;
+  /** En qué problema (condiciones del mar) se entrenó. */
+  problem: string;
   obstacles: string;
   total_steps: number;
   n_checkpoints: number;
@@ -76,6 +80,7 @@ export type SimState = {
 };
 
 export type SessionStatus = {
+  problem: string;
   playing: boolean;
   speed: number;
   deterministic: boolean;
@@ -107,7 +112,8 @@ export type ClientCommand =
   | { type: "add_obstacle"; x: number; y: number; radius?: number }
   | { type: "remove_obstacle"; index: number }
   | { type: "move_obstacle"; index: number; x: number; y: number }
-  | { type: "set_goal"; x: number; y: number };
+  | { type: "set_goal"; x: number; y: number }
+  | { type: "set_problem"; problem: string };
 
 const SERVER_MESSAGE_TYPES = new Set<ServerMessage["type"]>(["hello", "state", "episode_end", "error"]);
 
@@ -141,6 +147,7 @@ export type LaneScore = {
 export type LaneState = { id: LaneId; model: ModelRef | null; deterministic: boolean; sim: SimState };
 
 export type CompareStatus = {
+  problem: string;
   playing: boolean;
   speed: number;
   auto_reset: boolean;
@@ -149,6 +156,7 @@ export type CompareStatus = {
 };
 
 export type TournamentResult = {
+  problem: string;
   episodes: number;
   seed: number;
   scores: LaneScore[];
@@ -175,7 +183,8 @@ export type CompareCommand =
   | { type: "new_scenario"; seed?: number | null; n_obstacles?: number | null }
   | { type: "restart" }
   | { type: "reset_scores" }
-  | { type: "run_tournament"; episodes: number };
+  | { type: "run_tournament"; episodes: number }
+  | { type: "set_problem"; problem: string };
 
 const COMPARE_MESSAGE_TYPES = new Set<CompareServerMessage["type"]>([
   "hello",

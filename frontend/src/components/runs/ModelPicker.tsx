@@ -11,7 +11,8 @@ import { Slider } from "@/components/ui/slider";
 import { Toggle } from "@/components/ui/toggle";
 import { chronologicalCheckpoints, successAt } from "@/lib/checkpoints";
 import { formatPercent } from "@/lib/format";
-import type { RunDetail, RunSummary } from "@/lib/types";
+import { problemTitle } from "@/hooks/useProblems";
+import type { ProblemInfo, RunDetail, RunSummary } from "@/lib/types";
 
 type ModelPickerProps = {
   /** Por defecto "Modelo"; en la comparativa, "Barco A" / "Barco B". */
@@ -21,6 +22,8 @@ type ModelPickerProps = {
   actions?: ReactNode;
   className?: string;
   runs: RunSummary[] | null;
+  /** Para mostrar en qué condiciones del mar se entrenó cada run. */
+  problems?: ProblemInfo[];
   runsError: string | null;
   onRetryRuns: () => void;
   runId: string | null;
@@ -34,6 +37,7 @@ type ModelPickerProps = {
 export function ModelPicker(props: ModelPickerProps) {
   const { runs, runsError, onRetryRuns, runId, onRunChange, detail, checkpointId, onCheckpointChange } = props;
   const runLabelId = useId();
+  const selectedRun = runs?.find((run) => run.id === runId);
 
   return (
     <Widget
@@ -72,12 +76,18 @@ export function ModelPicker(props: ModelPickerProps) {
                   <SelectItem key={run.id} value={run.id}>
                     <span className="font-mono">{run.id}</span>
                     <span className="text-muted-foreground">
-                      {run.algo.toUpperCase()} · {formatPercent(run.best_success_rate)}
+                      {run.algo.toUpperCase()} · {formatPercent(run.best_success_rate)} ·{" "}
+                      {problemTitle(props.problems ?? [], run.problem)}
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {selectedRun && (
+              <p className="text-xs text-muted-foreground">
+                Entrenado en: <span className="text-foreground">{problemTitle(props.problems ?? [], selectedRun.problem)}</span>
+              </p>
+            )}
           </div>
 
           {detail ? (

@@ -69,10 +69,10 @@ async def _tournament(conn: Connection, session: ComparisonSession, episodes: in
     session.tournament_running = True
     session.mark_dirty()
     seed = secrets.randbelow(2**31 - episodes)
-    models, refs = session.tournament_models(), session.tournament_refs()
+    models, refs, problem = session.tournament_models(), session.tournament_refs(), session.problem
     try:
-        scores = await asyncio.to_thread(run_tournament, models, session.n_obstacles, episodes, seed)
-        result = TournamentResult(episodes=episodes, seed=seed, scores=scores, models=refs)
+        scores = await asyncio.to_thread(run_tournament, models, session.env_kwargs(), episodes, seed)
+        result = TournamentResult(problem=problem, episodes=episodes, seed=seed, scores=scores, models=refs)
         await conn.send(TournamentMsg(result=result))
     finally:
         session.tournament_running = False

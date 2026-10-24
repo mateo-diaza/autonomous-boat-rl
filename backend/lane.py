@@ -16,8 +16,8 @@ STRAIGHT = 1  # acción sin modelo: seguir recto
 
 
 class Lane:
-    def __init__(self, n_obstacles: int | tuple[int, int]):
-        self.env = BoatEnv(n_obstacles=n_obstacles)
+    def __init__(self, env_kwargs: dict):
+        self.env = BoatEnv(**env_kwargs)
         self.model: BaseAlgorithm | None = None
         self.model_ref: ModelRef | None = None
         self.deterministic = True
@@ -25,6 +25,12 @@ class Lane:
         self.action: int | None = None
         self.action_probs: list[float] | None = None
         self._initial: dict = {}
+
+    def reconfigure(self, env_kwargs: dict) -> None:
+        """Cambia las condiciones del mar (otro problema) conservando el modelo. Requiere un reset después."""
+        self.env = BoatEnv(**env_kwargs)
+        self.obs, self.action = None, None
+        self._refresh_probs()
 
     # ----------------------------------------------------------------- Escenario
     def reset(self, seed: int, options: dict | None = None) -> None:

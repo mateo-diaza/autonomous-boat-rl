@@ -13,6 +13,7 @@ import { SimToolbar } from "@/components/simulation/SimToolbar";
 import { VoyagePanel } from "@/components/voyage/VoyagePanel";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useModelSelection } from "@/hooks/useModelSelection";
+import { useProblems } from "@/hooks/useProblems";
 import { useRuns } from "@/hooks/useRuns";
 import { useSimulation } from "@/hooks/useSimulation";
 import { chronologicalCheckpoints, modelLabel } from "@/lib/checkpoints";
@@ -25,6 +26,7 @@ type DashboardProps = { mode: AppMode; onModeChange: (mode: AppMode) => void };
 export function Dashboard({ mode, onModeChange }: DashboardProps) {
   const { connection, world, snapshot, episodes, frames, send } = useSimulation();
   const { state: runsState, retry: retryRuns } = useRuns();
+  const problems = useProblems();
 
   const [tool, setTool] = useState<MapTool>("move");
   const [showRays, setShowRays] = useState(true);
@@ -105,6 +107,7 @@ export function Dashboard({ mode, onModeChange }: DashboardProps) {
         <div className="flex min-h-0 flex-col gap-3 lg:overflow-y-auto">
           <SimToolbar
             status={snapshot?.status ?? null}
+            problems={problems}
             sim={sim}
             world={world}
             enabled={connected}
@@ -124,6 +127,7 @@ export function Dashboard({ mode, onModeChange }: DashboardProps) {
               onRetryRuns={retryRuns}
               runId={runId}
               onRunChange={selectRun}
+            problems={problems}
               detail={detail}
               checkpointId={checkpointId}
               onCheckpointChange={selectCheckpoint}

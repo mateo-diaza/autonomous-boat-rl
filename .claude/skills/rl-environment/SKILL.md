@@ -37,7 +37,8 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
 1. Parámetro en el constructor con valor por defecto que mantiene el comportamiento actual
    (p. ej. `current_strength: float = 0.0`, `reward_mode: Literal["shaped", "sparse"] = "shaped"`).
 2. Lógica encapsulada en un método privado pequeño (`_apply_current`, `_compute_reward`).
-3. Registrar el problema en un catálogo único, p. ej. `training/problems.py`:
+3. Registrar el problema en el catálogo `training/problems.py` (ya existe; el backend lo expone en `/api/problems`
+   y la web lo muestra en "Condiciones del mar"):
    ```python
    PROBLEMS = {
        "base":    Problem(title="Base", description="...", env_kwargs={"n_obstacles": (4, 10)}),

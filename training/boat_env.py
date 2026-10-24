@@ -30,6 +30,7 @@ RAY_RANGE = 30.0
 # --- Recompensa --------------------------------------------------------------
 PROGRESS_K = 1.0         # por unidad de distancia ganada hacia la meta
 STEP_PENALTY = 0.01
+REWARD_MODES = ("shaped", "sparse")
 CRASH_REWARD = -100.0
 GOAL_REWARD = 100.0
 MAX_STEPS = 1000
@@ -68,10 +69,19 @@ class BoatEnv(gym.Env):
 
     ACTIONS = {0: -1.0, 1: 0.0, 2: +1.0}  # izq / recto / der (signo del giro)
 
-    def __init__(self, n_obstacles: int | tuple[int, int] = 6, render_mode: str | None = None):
+    def __init__(
+        self,
+        n_obstacles: int | tuple[int, int] = 6,
+        render_mode: str | None = None,
+        reward_mode: str = "shaped",
+    ):
+        """`reward_mode`: "shaped" (progreso hacia la meta en cada paso) o "sparse" (solo ±100 al terminar)."""
         super().__init__()
         assert render_mode is None or render_mode in self.metadata["render_modes"]
+        if reward_mode not in REWARD_MODES:
+            raise ValueError(f"reward_mode debe ser uno de {REWARD_MODES}, recibido: {reward_mode!r}")
         self.n_obstacles = n_obstacles
+        self.reward_mode = reward_mode
         self.render_mode = render_mode
 
         self.action_space = spaces.Discrete(3)
@@ -224,7 +234,7 @@ class BoatEnv(gym.Env):
         self.trail.append(self.pos.copy())
 
         dist = float(np.linalg.norm(self.goal - self.pos))
-        reward = PROGRESS_K * (self.prev_dist - dist) - STEP_PENALTY
+        reward = self._step_reward(dist)
         self.prev_dist = dist
 
         terminated = False
@@ -247,6 +257,14 @@ class BoatEnv(gym.Env):
         if self.render_mode == "human":
             self.render()
         return obs, float(reward), terminated, truncated, info
+
+    def _step_reward(self, dist: float) -> float:
+        """Recompensa de un paso sin contar el final del episodio (±100 se suma aparte)."""
+        if self.reward_mode == "sparse":
+            # Sin pistas: el agente solo sabe que lo ha hecho bien cuando llega (o mal cuando choca)
+            return 0.0
+        # Shaping basado en potencial (Φ = -distancia): no cambia la política óptima, pero da señal en cada paso
+        return PROGRESS_K * (self.prev_dist - dist) - STEP_PENALTY
 
     # ----------------------------------------------------------------- Sensores
     def _ray_distances(self) -> np.ndarray:

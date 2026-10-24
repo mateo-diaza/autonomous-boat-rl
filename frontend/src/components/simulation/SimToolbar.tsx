@@ -10,11 +10,12 @@ import {
   PlaybackControls,
   SELECTED,
 } from "@/components/simulation/controls";
+import { ProblemPicker } from "@/components/simulation/ProblemPicker";
 import { NEW_ROCK_RADIUS, type MapTool } from "@/components/simulation/SimStage";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { randomFreeSpot } from "@/lib/sim/placement";
-import type { ClientCommand, SessionStatus, SimState, WorldInfo } from "@/lib/types";
+import type { ClientCommand, ProblemInfo, SessionStatus, SimState, WorldInfo } from "@/lib/types";
 
 const TOOLS: { value: MapTool; label: string; hint: string; icon: ReactNode }[] = [
   { value: "move", label: "Mover", hint: "Arrastra una roca o la boya para moverla", icon: <Hand /> },
@@ -24,6 +25,7 @@ const TOOLS: { value: MapTool; label: string; hint: string; icon: ReactNode }[] 
 
 type SimToolbarProps = {
   status: SessionStatus | null;
+  problems: ProblemInfo[];
   sim: SimState | null;
   world: WorldInfo | null;
   enabled: boolean;
@@ -35,7 +37,7 @@ type SimToolbarProps = {
 };
 
 export function SimToolbar(props: SimToolbarProps) {
-  const { status, sim, world, enabled, tool, onToolChange, showRays, onShowRaysChange, send } = props;
+  const { status, problems, sim, world, enabled, tool, onToolChange, showRays, onShowRaysChange, send } = props;
   const playing = status?.playing ?? false;
   const activeTool = TOOLS.find((t) => t.value === tool);
   const toolLabelId = useId();
@@ -55,7 +57,7 @@ export function SimToolbar(props: SimToolbarProps) {
   };
 
   return (
-    <div className="widget flex flex-col gap-4 p-4 sm:p-5">
+    <div className="widget flex flex-col gap-3 p-4">
       <PlaybackControls
         playing={playing}
         speed={status?.speed ?? 30}
@@ -72,8 +74,17 @@ export function SimToolbar(props: SimToolbarProps) {
         />
       </PlaybackControls>
 
+      <div className="border-t border-border/60 pt-3">
+        <ProblemPicker
+          problems={problems}
+          value={status?.problem ?? null}
+          enabled={enabled}
+          onChange={(problem) => send({ type: "set_problem", problem })}
+        />
+      </div>
+
       {/* Edición del mapa */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border/60 pt-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border/60 pt-3">
         <div className="flex items-center gap-3">
           <span id={toolLabelId} className="text-sm text-muted-foreground">
             Editar carta

@@ -9,7 +9,6 @@ from __future__ import annotations
 import numpy as np
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from backend.config import DEFAULT_OBSTACLES
 from backend.lane import Lane
 from backend.playback import Playback
 from backend.schemas import (
@@ -27,16 +26,19 @@ from backend.schemas import (
     SetAutoResetCmd,
     SetDeterministicCmd,
     SetGoalCmd,
+    SetProblemCmd,
     SetSpeedCmd,
     StateMsg,
     StepCmd,
     UnloadModelCmd,
 )
+from training.problems import DEFAULT_PROBLEM, get_problem
 
 
 class SimulationSession:
-    def __init__(self, n_obstacles: int | tuple[int, int] = DEFAULT_OBSTACLES, seed: int | None = None):
-        self.lane = Lane(n_obstacles)
+    def __init__(self, problem: str = DEFAULT_PROBLEM, seed: int | None = None):
+        self.problem = problem
+        self.lane = Lane(get_problem(problem).env_kwargs)
         self.playback = Playback()
         self._rng = np.random.default_rng(seed)
         self._dirty = True  # hay cambios que el cliente aún no ha recibido
@@ -53,6 +55,12 @@ class SimulationSession:
         self.scenario_seed = int(self._rng.integers(2**31 - 1)) if seed is None else seed
         self.lane.reset(self.scenario_seed)
         self._after_reset()
+
+    def set_problem(self, problem: str) -> None:
+        """Otras condiciones del mar: nuevo entorno (conservando el modelo) y escenario nuevo."""
+        self.lane.reconfigure(get_problem(problem).env_kwargs)  # ValueError si no existe
+        self.problem = problem
+        self.new_scenario()
 
     def restart(self) -> None:
         """Mismo escenario (incluidas las ediciones) desde la posición de salida."""
@@ -115,6 +123,8 @@ class SimulationSession:
             case SetGoalCmd(x=x, y=y):
                 self.lane.env.set_goal([x, y])
                 self.lane.observe()
+            case SetProblemCmd(problem=problem):
+                self.set_problem(problem)
             case UnloadModelCmd():
                 self.unload_model()
             case _:
@@ -146,6 +156,7 @@ class SimulationSession:
         return StateMsg(
             sim=self.lane.sim_state(),
             status=SessionStatus(
+                problem=self.problem,
                 playing=self.playback.playing,
                 speed=self.playback.speed,
                 deterministic=self.lane.deterministic,

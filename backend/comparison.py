@@ -9,7 +9,6 @@ from __future__ import annotations
 import numpy as np
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from backend.config import DEFAULT_OBSTACLES
 from backend.lane import Lane
 from backend.playback import Playback
 from backend.schemas import (
@@ -32,9 +31,11 @@ from backend.schemas import (
     RestartCmd,
     SetAutoResetCmd,
     SetLaneDeterministicCmd,
+    SetProblemCmd,
     SetSpeedCmd,
     StepCmd,
 )
+from training.problems import DEFAULT_PROBLEM, get_problem
 
 
 class ScoreKeeper:
@@ -72,7 +73,7 @@ def reset_same_scenario(lanes: list[Lane], seed: int, options: dict | None = Non
 
 def run_tournament(
     models: list[tuple[BaseAlgorithm | None, bool]],
-    n_obstacles: int | tuple[int, int],
+    env_kwargs: dict,
     episodes: int,
     seed: int,
 ) -> list[LaneScore]:
@@ -80,7 +81,7 @@ def run_tournament(
 
     Usa sus propias lanes: no toca la regata en vivo. `models` = [(modelo o None, determinista)] por lane.
     """
-    lanes = [Lane(n_obstacles) for _ in models]
+    lanes = [Lane(env_kwargs) for _ in models]
     for lane, (model, deterministic) in zip(lanes, models, strict=True):
         if model is not None:
             lane.set_model(model)
@@ -97,8 +98,9 @@ def run_tournament(
 
 
 class ComparisonSession:
-    def __init__(self, n_obstacles: int | tuple[int, int] = DEFAULT_OBSTACLES, seed: int | None = None):
-        self.lanes: dict[LaneId, Lane] = {lane_id: Lane(n_obstacles) for lane_id in LANE_IDS}
+    def __init__(self, problem: str = DEFAULT_PROBLEM, seed: int | None = None):
+        self.problem = problem
+        self.lanes: dict[LaneId, Lane] = {lane_id: Lane(get_problem(problem).env_kwargs) for lane_id in LANE_IDS}
         self.playback = Playback()
         self.scores = {lane_id: ScoreKeeper() for lane_id in LANE_IDS}
         self.tournament_running = False
@@ -126,9 +128,18 @@ class ComparisonSession:
         self._race_counted = False
         self._dirty = True
 
-    @property
-    def n_obstacles(self) -> int | tuple[int, int]:
-        return self.lanes[LANE_IDS[0]].env.n_obstacles
+    def set_problem(self, problem: str) -> None:
+        """Otras condiciones del mar para ambos barcos (conservan su modelo) y escenario nuevo."""
+        env_kwargs = get_problem(problem).env_kwargs  # ValueError si no existe
+        for lane in self.lanes.values():
+            lane.reconfigure(env_kwargs)
+        self.problem = problem
+        self.new_scenario()
+
+    def env_kwargs(self) -> dict:
+        """Parámetros actuales del entorno (problema + rocas), para el torneo."""
+        env = self.lanes[LANE_IDS[0]].env
+        return {**get_problem(self.problem).env_kwargs, "n_obstacles": env.n_obstacles}
 
     # -------------------------------------------------------------------- Modelo
     def set_model(self, lane_id: LaneId, model: BaseAlgorithm, ref: ModelRef) -> None:
@@ -168,6 +179,8 @@ class ComparisonSession:
                 self.new_scenario(seed, n_obstacles)
             case RestartCmd():
                 self.restart()
+            case SetProblemCmd(problem=problem):
+                self.set_problem(problem)
             case ResetScoresCmd():
                 self.scores = {lane_id: ScoreKeeper() for lane_id in LANE_IDS}
             case _:
@@ -203,6 +216,7 @@ class ComparisonSession:
                 for lane_id, lane in self.lanes.items()
             ],
             status=CompareStatus(
+                problem=self.problem,
                 playing=self.playback.playing,
                 speed=self.playback.speed,
                 auto_reset=self.playback.auto_reset,

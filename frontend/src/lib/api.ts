@@ -1,5 +1,5 @@
 import { API_URL } from "@/lib/config";
-import type { RunDetail, RunSummary } from "@/lib/types";
+import type { ProblemInfo, RunDetail, RunSummary } from "@/lib/types";
 
 export class ApiError extends Error {
   constructor(
@@ -32,4 +32,8 @@ export function fetchRuns(signal?: AbortSignal): Promise<RunSummary[]> {
 
 export function fetchRun(runId: string, signal?: AbortSignal): Promise<RunDetail> {
   return getJson(`/api/runs/${encodeURIComponent(runId)}`, signal);
+}
+
+export function fetchProblems(signal?: AbortSignal): Promise<ProblemInfo[]> {
+  return getJson("/api/problems", signal);
 }

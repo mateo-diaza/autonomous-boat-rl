@@ -12,7 +12,6 @@ SIM_HZ = 30                       # mensajes de estado por segundo hacia el clie
 DEFAULT_SPEED = 30.0              # pasos de simulación por segundo (1 paso = 0.1 s simulados)
 SPEED_LIMITS = (1.0, 240.0)
 END_PAUSE_S = 1.2                 # pausa tras terminar un episodio antes del siguiente
-DEFAULT_OBSTACLES: int | tuple[int, int] = (4, 10)
 
 
 def get_models_dir() -> Path:

@@ -11,10 +11,12 @@ import { COMPARE_SHORTCUTS, ShortcutsDialog } from "@/components/dashboard/Short
 import { PANEL_FLOW } from "@/components/dashboard/layout";
 import { ModelPicker } from "@/components/runs/ModelPicker";
 import { DETERMINISTIC_HINT, LabeledSwitch, PlaybackControls, SELECTED } from "@/components/simulation/controls";
+import { ProblemPicker } from "@/components/simulation/ProblemPicker";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useComparison } from "@/hooks/useComparison";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useModelSelection } from "@/hooks/useModelSelection";
+import { useProblems } from "@/hooks/useProblems";
 import { useRuns } from "@/hooks/useRuns";
 import { cn } from "@/lib/utils";
 import type { LaneId, RunDetail } from "@/lib/types";
@@ -27,6 +29,7 @@ type CompareDashboardProps = { mode: AppMode; onModeChange: (mode: AppMode) => v
 export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) {
   const { connection, world, snapshot, lastRace, tournament, frames, send } = useComparison();
   const { state: runsState, retry: retryRuns } = useRuns();
+  const problems = useProblems();
   const runs = runsState.status === "ready" ? runsState.runs : null;
   const runsError = runsState.status === "error" ? runsState.message : null;
 
@@ -87,7 +90,7 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
         />
 
         <div className="flex min-h-0 flex-col gap-3 lg:overflow-y-auto">
-          <div className="widget flex flex-col gap-4 p-4 sm:p-5">
+          <div className="widget flex flex-col gap-3 p-4">
             <PlaybackControls
               playing={playing}
               speed={status?.speed ?? 30}
@@ -97,6 +100,14 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
             >
               <RaysSelector value={rays} onChange={setRays} />
             </PlaybackControls>
+            <div className="border-t border-border/60 pt-3">
+              <ProblemPicker
+                problems={problems}
+                value={status?.problem ?? null}
+                enabled={connected}
+                onChange={(problem) => send({ type: "set_problem", problem })}
+              />
+            </div>
           </div>
 
           <section
@@ -126,6 +137,7 @@ export function CompareDashboard({ mode, onModeChange }: CompareDashboardProps) 
                   onRetryRuns={retryRuns}
                   runId={selection.runId}
                   onRunChange={selection.selectRun}
+                  problems={problems}
                   detail={selection.detail}
                   checkpointId={selection.checkpointId}
                   onCheckpointChange={selection.selectCheckpoint}

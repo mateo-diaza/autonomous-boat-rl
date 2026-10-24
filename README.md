@@ -12,6 +12,7 @@ autonomous-boat-rl/
 │   ├── train.py         #   entrenamiento con checkpoints
 │   ├── play.py          #   control manual con teclado (pygame)
 │   ├── replay.py        #   reproducir checkpoints en pygame
+│   ├── problems.py      #   catálogo de variantes de dificultad ("condiciones del mar")
 │   ├── paths.py         #   dónde se guardan modelos y logs
 │   ├── models/          #   checkpoints por run (no versionados; _archivo/ no se muestra en la web)
 │   ├── logs/            #   TensorBoard (no versionados)
@@ -65,6 +66,8 @@ python -m training.play
 #   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
 python -m training.train --algo ppo --run ppo
 python -m training.train --algo dqn --run dqn
+# Variantes de dificultad (training/problems.py): --problem base | sparse
+python -m training.train --algo ppo --problem sparse --run ppo_sparse
 # Todo es configurable: --steps, --ckpt-freq, --n-envs, --n-steps, --n-epochs, --lr, --obstacles
 
 # Ver cómo aprende en pygame: reproduce los checkpoints en orden sobre los mismos escenarios

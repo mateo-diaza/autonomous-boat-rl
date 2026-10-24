@@ -6,12 +6,14 @@ from starlette.websockets import WebSocketDisconnect
 from backend.models_cache import load_model
 from backend.schemas import (
     AddObstacleCmd,
+    ModelRef,
     MoveObstacleCmd,
     PlayCmd,
     RemoveObstacleCmd,
     RestartCmd,
     SetAutoResetCmd,
     SetGoalCmd,
+    SetProblemCmd,
     StepCmd,
 )
 from backend.simulation import SimulationSession
@@ -135,3 +137,31 @@ def test_ws_rejects_foreign_origin(client):
         "/ws/sim", headers={"origin": "http://evil.example"}
     ) as ws:
         ws.receive_json()
+
+
+# ------------------------------------------------------------------ Problemas
+def test_problems_catalog(client):
+    problems = client.get("/api/problems").json()
+    assert problems[0]["id"] == "base" and {"id", "title", "description"} <= problems[0].keys()
+
+
+def test_runs_report_their_problem_with_fallback_for_old_configs(client):
+    assert client.get("/api/runs").json()[0]["problem"] == "base"  # config sin "problem" -> base
+
+
+def test_set_problem_keeps_model_and_changes_env(models_dir):
+    s = SimulationSession(seed=0)
+    model = load_model(models_dir / RUN / "final.zip", "ppo")
+    s.set_model(model, ModelRef(run_id=RUN, checkpoint_id="final", algo="ppo"))
+    s.apply(SetProblemCmd(type="set_problem", problem="sparse"))
+    status = s.state_msg().status
+    assert status.problem == "sparse" and status.model is not None
+    assert s.lane.env.reward_mode == "sparse" and s.state_msg().sim.action_probs is not None
+
+
+def test_ws_unknown_problem_returns_error(client):
+    with client.websocket_connect("/ws/sim") as ws:
+        ws.receive_json(), ws.receive_json()
+        ws.send_json({"type": "set_problem", "problem": "huracan"})
+        err = ws.receive_json()
+        assert err["type"] == "error" and "Problema desconocido" in err["message"]
