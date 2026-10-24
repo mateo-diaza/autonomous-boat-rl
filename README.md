@@ -1,6 +1,6 @@
 # Barco autónomo con Reinforcement Learning
 
-Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (PPO / DQN con
+Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (DQN con
 Stable-Baselines3), con una web para ver en vivo cómo navega y cómo ha ido aprendiendo.
 
 ## Estructura
@@ -61,25 +61,24 @@ Por separado: `pnpm dev:api` o `pnpm dev:web`.
 # Probar el entorno a mano (← → girar, R reiniciar, ESC salir)
 python -m training.play
 
-# Entrenar. Por defecto: entrenamientos cortos con ~30 checkpoints para ver la progresión del aprendizaje
-#   PPO: 30k pasos, 1 checkpoint por actualización (cada 1024 pasos)  -> ~1 min
-#   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
-python -m training.train --algo ppo --run ppo
-python -m training.train --algo dqn --run dqn
+# Entrenar. El algoritmo del proyecto es DQN (PPO sigue disponible con --algo ppo; sus runs están en
+# training/models/_archivo/ppo). Por defecto: 50k pasos y un checkpoint cada 2.5k para ver la progresión.
+python -m training.train --run dqn                                                        # mar en calma
 # Variantes de dificultad (training/problems.py): --problem base | sparse | current | u_trap | u_trap_path
-python -m training.train --algo ppo --problem sparse --run ppo_sparse
-python -m training.train --problem current --steps 50000 --run ppo_current                            # sin sensor
-python -m training.train --problem current --steps 50000 --observe-current --run ppo_current_sensor   # con sensor
-# Trampa en U: solo se resuelve con recompensa por ruta navegable + sensor de ruta ("GPS náutico")
-python -m training.train --problem u_trap_path --observe-route --steps 100000 --ckpt-freq 4096 --run ppo_u_trap_route
+python -m training.train --problem sparse --run dqn_sparse                                # recompensa escasa
+python -m training.train --problem current --steps 100000 --ckpt-freq 5000 --run dqn_current
+python -m training.train --problem current --steps 100000 --ckpt-freq 5000 --observe-current --run dqn_current_sensor
+python -m training.train --problem u_trap --steps 100000 --run dqn_u_trap                 # se atasca en la U
+# Trampa en U resuelta: recompensa por ruta navegable + sensor de ruta ("GPS náutico")
+python -m training.train --problem u_trap_path --observe-route --steps 150000 --ckpt-freq 5000 --run dqn_u_trap_route
 # Los sensores (--observe-current, --observe-route) son del modelo, no del mar: la web reconstruye el barco con ellos
-# Todo es configurable: --steps, --ckpt-freq, --n-envs, --n-steps, --n-epochs, --lr, --obstacles
+# Todo es configurable: --steps, --ckpt-freq, --n-envs, --lr, --obstacles (y --n-steps, --n-epochs para PPO)
 
 # Ver cómo aprende en pygame: reproduce los checkpoints en orden sobre los mismos escenarios
-python -m training.replay training/models/ppo --every 2
+python -m training.replay training/models/dqn --every 2
 # (ESPACIO salta episodio, N salta checkpoint, ESC sale)
-python -m training.replay training/models/ppo --upto 20000 --max-steps 300 --stochastic
-python -m training.replay training/models/ppo/best/best_model.zip --episodes 10
+python -m training.replay training/models/dqn --upto 20000 --max-steps 300 --stochastic
+python -m training.replay training/models/dqn/best/best_model.zip --episodes 10
 
 # Curvas de aprendizaje (rollout/success_rate, eval/mean_reward...)
 tensorboard --logdir training/logs

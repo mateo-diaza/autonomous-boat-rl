@@ -6,11 +6,11 @@ compara directamente la evolución de la política.
     ESPACIO  saltar episodio     N  siguiente checkpoint     ESC  salir
 
 Uso:
-    python -m training.replay training/models/ppo                  # todos los checkpoints
-    python -m training.replay training/models/ppo --every 2        # uno de cada dos
-    python -m training.replay training/models/ppo --upto 20000     # solo el tramo donde aprende
-    python -m training.replay training/models/ppo --max-steps 300 --stochastic
-    python -m training.replay training/models/ppo/best/best_model.zip --episodes 10
+    python -m training.replay training/models/dqn                  # todos los checkpoints
+    python -m training.replay training/models/dqn --every 2        # uno de cada dos
+    python -m training.replay training/models/dqn --upto 20000     # solo el tramo donde aprende
+    python -m training.replay training/models/dqn --max-steps 300 --stochastic
+    python -m training.replay training/models/dqn/best/best_model.zip --episodes 10
 """
 
 import argparse

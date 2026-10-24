@@ -7,7 +7,7 @@ Estructura de salida:
     models/<run>/final.zip
     logs/<run>_1/                         TensorBoard (tensorboard --logdir logs)
 
-Uso: python -m training.train --algo ppo --problem base --run ppo
+Uso: python -m training.train --problem base --run dqn
 
 Por defecto se entrena poco y se guardan muchos checkpoints (~30): el agente aprende pronto y lo
 interesante para la demo es ver la progresión, no exprimir los últimos puntos de rendimiento.
@@ -85,7 +85,7 @@ def build_model(algo: str, env, seed: int, tb_log: str, n_steps: int, lr: float 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--algo", choices=["dqn", "ppo"], default="ppo")
+    parser.add_argument("--algo", choices=["dqn", "ppo"], default="dqn")
     parser.add_argument("--steps", type=int, default=None, help="por defecto: 30k (ppo) / 50k (dqn)")
     parser.add_argument("--problem", choices=list(PROBLEMS), default=DEFAULT_PROBLEM,
                         help="variante de dificultad del entorno (ver training/problems.py)")
