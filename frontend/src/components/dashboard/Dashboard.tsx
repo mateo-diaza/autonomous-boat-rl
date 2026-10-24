@@ -38,10 +38,14 @@ export function Dashboard() {
   const checkpointId =
     chosenCheckpoint && chosenCheckpoint.runId === runId ? chosenCheckpoint.id : detail ? defaultCheckpointId(detail) : null;
 
-  // Cargar el modelo al cambiar la selección o al (re)conectar: el servidor empieza cada sesión sin modelo
+  // Cargar el modelo al cambiar la selección o al (re)conectar: el servidor empieza cada sesión sin modelo.
+  // Después se repite la travesía desde la salida: si no, el modelo nuevo hereda el barco tal como lo dejó
+  // el anterior (girando, junto a una roca...) y parece peor de lo que es. Así además cada checkpoint se
+  // compara en el mismo escenario. El servidor procesa los comandos en orden: restart llega con el modelo ya cargado.
   useEffect(() => {
     if (connection === "open" && detail && checkpointId) {
       send({ type: "load_model", run_id: detail.id, checkpoint_id: checkpointId });
+      send({ type: "restart" });
     }
   }, [connection, detail, checkpointId, send]);
 
