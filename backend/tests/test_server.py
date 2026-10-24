@@ -256,6 +256,7 @@ def test_runs_have_friendly_names(client):
     assert runs[RUN]["label"] == "1 · Mar en calma" and runs[RUN]["subtitle"] == "sin dificultades extra"
     assert runs[SENSOR_RUN]["label"] == "2 · Corrientes + sensor"
     assert runs[SENSOR_RUN]["subtitle"] == "corriente aleatoria · sensor de corriente"
+    assert client.get(f"/api/runs/{SENSOR_RUN}").json()["label"] == "2 · Corrientes + sensor"
 
 
 def test_display_name_rules():
@@ -320,3 +321,16 @@ def test_reward_variant_navigates_in_its_sea():
     s = SimulationSession(seed=0)
     s.apply(SetProblemCmd(type="set_problem", problem="u_trap_path"))
     assert s.state_msg().status.problem == "u_trap" and s.lane.env.reward_mode == "shaped"
+
+
+def test_lan_origin_regex():
+    import re
+
+    from backend.config import LAN_ORIGIN_REGEX
+
+    def lan(origin):
+        return re.fullmatch(LAN_ORIGIN_REGEX, origin) is not None
+
+    assert lan("http://192.168.3.8:3000") and lan("http://10.0.0.5:3000") and lan("http://mi-portatil.local:3000")
+    assert not lan("https://malicioso.com") and not lan("http://192.168.3.8.evil.com:3000")
+    assert not lan("http://172.32.0.1:3000")

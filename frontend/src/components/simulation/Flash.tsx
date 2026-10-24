@@ -19,9 +19,10 @@ export function Flash({ children }: { children: ReactNode }) {
   if (!visible) return null;
 
   return (
-    // Arriba y centrado, bajo el HUD (≈ 2 filas de pastillas): no tapa el centro de la carta, donde suele estar el barco
-    <div className="episode-flash pointer-events-none absolute inset-x-3 top-[5.5rem] flex justify-center">
-      <div className="flex flex-col gap-0.5 rounded-2xl bg-card/95 px-4 py-2 font-heading text-lg italic shadow-lg">
+    // Arriba y centrado, sin tapar el centro de la carta (donde suele estar el barco). Con el HUD sobre el mapa
+    // va debajo de sus pastillas (≈ 2 filas); en cartas pequeñas el HUD está fuera y el aviso sube y se encoge.
+    <div className="episode-flash pointer-events-none absolute inset-x-2 top-2 flex justify-center @md:inset-x-3 @md:top-[5.5rem]">
+      <div className="flex flex-col gap-0.5 rounded-xl bg-card/95 px-3 py-1 font-heading text-sm italic shadow-md @md:rounded-2xl @md:px-4 @md:py-2 @md:text-lg @md:shadow-lg [&_svg]:size-4 @md:[&_svg]:size-5">
         {children}
       </div>
     </div>

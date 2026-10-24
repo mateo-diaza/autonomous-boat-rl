@@ -4,6 +4,7 @@ import { LANE_STYLE, type RaysTarget } from "@/components/compare/lanes";
 import { ChartCanvas, type SceneContent } from "@/components/simulation/ChartCanvas";
 import { CurrentBadge } from "@/components/simulation/CurrentBadge";
 import { Flash } from "@/components/simulation/Flash";
+import { HUD_OVERLAY, StageStrip } from "@/components/simulation/StageStrip";
 import type { RaceLogEntry } from "@/hooks/useComparison";
 import type { Connection } from "@/hooks/useServerSocket";
 import { describeModel } from "@/lib/checkpoints";
@@ -52,7 +53,7 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
     : "Regata cargando.";
 
   return (
-    <div className={cn("widget flex flex-col justify-center p-2 sm:p-3", className)}>
+    <div className={cn("widget @container flex flex-col justify-center p-2 sm:p-3", className)}>
       <ChartCanvas
         world={world}
         connection={connection}
@@ -61,11 +62,16 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
         touchClassName="touch-auto" // en la comparativa no se edita la carta: el scroll táctil es libre
       >
         {lanes[0] && (
-          <div className="pointer-events-none absolute top-3 right-3 font-mono text-sm tabular-nums">
+          <div className={cn("pointer-events-none absolute top-3 right-3 font-mono text-sm tabular-nums", HUD_OVERLAY)}>
             <CurrentBadge current={lanes[0].sim.current} />
           </div>
         )}
-        <ul className="pointer-events-none absolute inset-x-3 top-3 flex flex-col items-start gap-1.5 font-mono text-sm tabular-nums">
+        <ul
+          className={cn(
+            "pointer-events-none absolute inset-x-3 top-3 flex-col items-start gap-1.5 font-mono text-sm tabular-nums",
+            HUD_OVERLAY,
+          )}
+        >
           {lanes.map((lane) => (
             <li
               key={lane.id}
@@ -93,6 +99,21 @@ export function CompareStage({ className, world, frames, snapshot, connection, r
           </Flash>
         )}
       </ChartCanvas>
+      {lanes.length > 0 && (
+        <StageStrip className="items-start">
+          <ul className="flex min-w-0 flex-1 flex-col gap-0.5">
+            {lanes.map((lane) => (
+              <li key={lane.id} className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", LANE_STYLE[lane.id].dot)} />
+                <span className="font-semibold text-foreground">{lane.id}</span>
+                <span className="min-w-0 truncate">{describeModel(lane.model)}</span>
+                <span className="shrink-0">· paso {lane.sim.step}</span>
+              </li>
+            ))}
+          </ul>
+          <CurrentBadge current={lanes[0].sim.current} compact />
+        </StageStrip>
+      )}
     </div>
   );
 }

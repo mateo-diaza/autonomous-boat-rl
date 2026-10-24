@@ -5,6 +5,7 @@ import { useRef, type PointerEvent } from "react";
 import { ChartCanvas, type SceneContent } from "@/components/simulation/ChartCanvas";
 import { CurrentBadge } from "@/components/simulation/CurrentBadge";
 import { Flash } from "@/components/simulation/Flash";
+import { HUD_OVERLAY, StageStrip } from "@/components/simulation/StageStrip";
 import type { Connection, EpisodeLogEntry } from "@/hooks/useSimulation";
 import { relativeRays, type DragPreview } from "@/lib/draw/chart";
 import { hitObstacle, isInside, screenToWorld, type WorldPoint } from "@/lib/draw/geometry";
@@ -115,10 +116,11 @@ export function SimStage(props: SimStageProps) {
     ? `Carta de navegación: el barco navega hacia la boya entre ${sim.obstacles.length} rocas.`
     : "Carta de navegación cargando.";
   const outcome = lastEpisode ? EPISODE_OUTCOMES[lastEpisode.event] : null;
+  const progress = sim && `Paso ${sim.step} · Retorno ${formatReturn(sim.episode_return)}`;
 
   return (
     // flex + justify-center: si el widget no puede ser cuadrado (ancho limitado), la carta queda centrada
-    <div className={cn("widget flex flex-col justify-center p-2 sm:p-3", className)}>
+    <div className={cn("widget @container flex flex-col justify-center p-2 sm:p-3", className)}>
       <ChartCanvas
         world={world}
         connection={connection}
@@ -131,10 +133,13 @@ export function SimStage(props: SimStageProps) {
         onPointerCancel={() => (dragRef.current = null)}
       >
         {sim && (
-          <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 font-mono text-sm tabular-nums">
-            <span className="max-w-full truncate rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
-              Paso {sim.step} · Retorno {formatReturn(sim.episode_return)}
-            </span>
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-3 top-3 flex-wrap items-start justify-between gap-2 font-mono text-sm tabular-nums",
+              HUD_OVERLAY,
+            )}
+          >
+            <span className="max-w-full truncate rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">{progress}</span>
             <span className="flex max-w-full min-w-0 flex-col items-end gap-1.5">
               <span className="max-w-full truncate rounded-full bg-card/90 px-3 py-1 shadow-sm backdrop-blur">
                 {modelLabel}
@@ -152,6 +157,15 @@ export function SimStage(props: SimStageProps) {
           </Flash>
         )}
       </ChartCanvas>
+      {sim && (
+        <StageStrip>
+          <span className="shrink-0">{progress}</span>
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="min-w-0 truncate">{modelLabel}</span>
+            <CurrentBadge current={sim.current} compact />
+          </span>
+        </StageStrip>
+      )}
     </div>
   );
 }

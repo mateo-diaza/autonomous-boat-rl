@@ -18,7 +18,8 @@ echo "  Demo en la wifi: $URL"
 command -v qrencode >/dev/null && qrencode -t ansiutf8 "$URL"
 echo
 
-export CORS_ORIGINS="$URL,http://localhost:3000,http://127.0.0.1:3000"
+# Acepta la web la abran con la IP que la abran (móviles, otra interfaz de red...): solo IPs privadas
+export ALLOW_LAN_ORIGINS=1
 exec pnpm exec concurrently --kill-others -n api,web -c blue,magenta \
   ".venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000" \
   "pnpm --dir frontend start --hostname 0.0.0.0 --port 3000"

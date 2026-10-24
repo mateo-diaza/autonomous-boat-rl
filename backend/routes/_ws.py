@@ -11,7 +11,7 @@ from fastapi import WebSocket, status
 from pydantic import BaseModel, ValidationError
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from backend.config import CORS_ORIGINS, SIM_HZ, SPEED_LIMITS
+from backend.config import SIM_HZ, SPEED_LIMITS, origin_allowed
 from backend.models_cache import load_model
 from backend.playback import Playback
 from backend.runs import checkpoint_path, read_config, run_label
@@ -52,7 +52,8 @@ class Connection:
 async def accept_local(ws: WebSocket) -> bool:
     """CORS no protege los WebSockets: se valida el origen a mano (sin Origin = cliente no navegador)."""
     origin = ws.headers.get("origin")
-    if origin is not None and origin not in CORS_ORIGINS:
+    if origin is not None and not origin_allowed(origin):
+        log.warning("WebSocket rechazado: origen %r no permitido (variable CORS_ORIGINS)", origin)
         await ws.close(code=status.WS_1008_POLICY_VIOLATION)
         return False
     await ws.accept()

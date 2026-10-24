@@ -74,7 +74,9 @@ def _unique_labels(runs: list[RunSummary]) -> list[RunSummary]:
 def get_run(models_dir: Path, run_id: str) -> RunDetail:
     run_dir = _run_dir(models_dir, run_id)
     checkpoints, curve = _checkpoints(run_dir), _curve(run_dir)
-    return RunDetail(**_summary(run_dir, checkpoints, curve).model_dump(), checkpoints=checkpoints, curve=curve)
+    summary = _summary(run_dir, checkpoints, curve)
+    summary.label = run_label(models_dir, run_id) or summary.label  # el mismo nombre numerado que en la lista
+    return RunDetail(**summary.model_dump(), checkpoints=checkpoints, curve=curve)
 
 
 def read_config(models_dir: Path, run_id: str) -> dict:
