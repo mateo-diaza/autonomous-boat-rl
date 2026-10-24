@@ -1,6 +1,6 @@
 """App FastAPI: REST de runs + WebSocket de simulación. Solo para uso local.
 
-Arranque: .venv/bin/uvicorn server.main:app --reload --port 8000
+Arranque: .venv/bin/uvicorn backend.main:app --reload --port 8000
 """
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from server.config import CORS_ORIGINS
-from server.routes import compare, runs, sim
+from backend.config import CORS_ORIGINS
+from backend.routes import compare, runs, sim
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 

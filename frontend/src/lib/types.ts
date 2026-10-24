@@ -1,5 +1,5 @@
 /**
- * Contrato con el backend. Espejo de server/schemas.py: mismos nombres (snake_case).
+ * Contrato con el backend. Espejo de backend/schemas.py: mismos nombres (snake_case).
  * Si cambia un esquema en Python, cambia aquí en el mismo commit.
  */
 

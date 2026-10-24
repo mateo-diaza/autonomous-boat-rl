@@ -2,14 +2,14 @@
 
     ← / →  girar      R  nuevo escenario      ESC  salir
 
-Uso: python -m scripts.play [--obstacles 6] [--seed 0]
+Uso: python -m training.play [--obstacles 6] [--seed 0]
 """
 
 import argparse
 
 import pygame
 
-from src.boat_env import BoatEnv
+from training.boat_env import BoatEnv
 
 
 def main():

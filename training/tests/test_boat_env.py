@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from stable_baselines3.common.env_checker import check_env
 
-from src.boat_env import EDIT_RADIUS_LIMITS, WORLD_SIZE, BoatEnv
+from training.boat_env import EDIT_RADIUS_LIMITS, WORLD_SIZE, BoatEnv
 
 
 def test_check_env_passes():

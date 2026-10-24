@@ -1,0 +1,7 @@
+# Módulo de entrenamiento: entorno + RL + visualización local
+# (PyTorch CPU: pip install torch --index-url https://download.pytorch.org/whl/cpu)
+gymnasium
+stable-baselines3
+pygame
+tensorboard
+numpy

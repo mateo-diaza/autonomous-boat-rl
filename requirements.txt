@@ -1,10 +1,6 @@
-gymnasium
-stable-baselines3
-pygame
-tensorboard
-numpy
-fastapi
-uvicorn[standard]
+# Todo el proyecto Python (entrenamiento + backend) + herramientas de desarrollo
+-r training/requirements.txt
+-r backend/requirements.txt
 pytest
 httpx
 ruff

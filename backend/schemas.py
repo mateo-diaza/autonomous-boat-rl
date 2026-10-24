@@ -10,8 +10,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
 
-from server.config import SPEED_LIMITS
-from src.boat_env import EDIT_RADIUS_LIMITS, WORLD_SIZE
+from backend.config import SPEED_LIMITS
+from training.boat_env import EDIT_RADIUS_LIMITS, WORLD_SIZE
 
 Coord = Annotated[float, Field(ge=0, le=WORLD_SIZE)]
 Radius = Annotated[float, Field(ge=EDIT_RADIUS_LIMITS[0], le=EDIT_RADIUS_LIMITS[1])]

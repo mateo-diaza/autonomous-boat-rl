@@ -5,9 +5,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from server.config import get_models_dir
-from server.runs import RunNotFoundError, get_run, list_runs
-from server.schemas import RunDetail, RunSummary
+from backend.config import get_models_dir
+from backend.runs import RunNotFoundError, get_run, list_runs
+from backend.schemas import RunDetail, RunSummary
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 

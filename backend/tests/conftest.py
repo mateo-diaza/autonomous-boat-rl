@@ -1,4 +1,4 @@
-"""Fixtures compartidas: un models/ temporal con la misma estructura que genera scripts/train.py."""
+"""Fixtures compartidas: un models/ temporal con la misma estructura que genera training/train.py."""
 
 import json
 
@@ -7,16 +7,16 @@ import pytest
 from fastapi.testclient import TestClient
 from stable_baselines3 import PPO
 
-from server.config import get_models_dir
-from server.main import app
-from src.boat_env import BoatEnv
+from backend.config import get_models_dir
+from backend.main import app
+from training.boat_env import BoatEnv
 
 RUN = "ppo_test"
 
 
 @pytest.fixture(scope="module")
 def models_dir(tmp_path_factory):
-    """Run mínimo con la misma estructura que genera scripts/train.py."""
+    """Run mínimo con la misma estructura que genera training/train.py."""
     root = tmp_path_factory.mktemp("models")
     run = root / RUN
     (run / "checkpoints").mkdir(parents=True)

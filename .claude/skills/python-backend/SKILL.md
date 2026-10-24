@@ -1,9 +1,9 @@
 ---
 name: python-backend
-description: Buenas prácticas para el backend FastAPI de autonomous-boat-rl (server/) que sirve la simulación del barco y los modelos SB3 por REST y WebSocket. Úsala siempre que crees o modifiques código en server/, endpoints, esquemas Pydantic, el bucle de simulación por WebSocket, la carga de modelos, o los tests del backend.
+description: Buenas prácticas para el backend FastAPI de autonomous-boat-rl (backend/) que sirve la simulación del barco y los modelos SB3 por REST y WebSocket. Úsala siempre que crees o modifiques código en server/, endpoints, esquemas Pydantic, el bucle de simulación por WebSocket, la carga de modelos, o los tests del backend.
 ---
 
-# Backend FastAPI (server/)
+# Backend FastAPI (backend/)
 
 Objetivo: exponer `BoatEnv` + modelos SB3 a un frontend Next.js, con simulación en vivo por WebSocket.
 Se ejecuta **solo en local** (`localhost:8000`). Lee también la skill `clean-code`.
@@ -11,12 +11,12 @@ Se ejecuta **solo en local** (`localhost:8000`). Lee también la skill `clean-co
 ## 1. Estructura
 
 ```
-server/
+backend/
 ├── __init__.py
 ├── main.py          # crea la app, CORS, incluye routers. Sin lógica de negocio.
 ├── config.py        # rutas (ROOT, MODELS_DIR), constantes, settings
 ├── schemas.py       # modelos Pydantic: contrato con el frontend (REST + mensajes WS)
-├── runs.py          # descubrir runs, checkpoints y curvas en models/  (lectura de disco)
+├── runs.py          # descubrir runs, checkpoints y curvas en training/models/ (lectura de disco)
 ├── models_cache.py  # carga de modelos SB3 con caché
 ├── lane.py          # Lane: un barco con su "cerebro" (BoatEnv + modelo opcional). Pieza común
 ├── playback.py      # Playback: reloj play/pausa/velocidad/pausa entre travesías. Pieza común
@@ -28,8 +28,8 @@ server/
 │   ├── sim.py       # WS /ws/sim
 │   └── compare.py   # WS /ws/compare (el torneo corre en un hilo: la regata en vivo no se congela)
 ```
-Tests del backend en `tests/` (`test_server.py`, `test_comparison.py`). Las fixtures compartidas
-(`models_dir` temporal, `client` con `get_models_dir` sustituida) viven en `tests/conftest.py`.
+Tests del backend en `backend/tests/` (`test_server.py`, `test_comparison.py`). Las fixtures compartidas
+(`models_dir` temporal, `client` con `get_models_dir` sustituida) viven en `backend/tests/conftest.py`.
 Una sesión nueva = componer `Lane` + `Playback`, no copiar lógica de otra sesión.
 
 Regla: **la lógica no vive en las rutas.** Las rutas validan, delegan y serializan.
@@ -93,7 +93,7 @@ async def sim_ws(ws: WebSocket):
 - `models_cache.load_model(path: Path)` con `functools.lru_cache(maxsize=32)`; `device="cpu"`.
 - Validar que la ruta está **dentro de** `MODELS_DIR` (`path.resolve().is_relative_to(MODELS_DIR)`):
   los ids de run/checkpoint vienen del cliente → evita path traversal.
-- El algoritmo se lee de `models/<run>/config.json` (Registry `ALGOS`).
+- El algoritmo se lee de `training/models/<run>/config.json` (Registry `ALGOS`).
 - Para el panel "cerebro": probabilidades de acción con
   `model.policy.get_distribution(obs_tensor).distribution.probs` (PPO) o softmax de `q_net` (DQN),
   encapsulado en una función `action_probabilities(model, obs) -> list[float]`.
@@ -102,7 +102,7 @@ async def sim_ws(ws: WebSocket):
 
 - Prefijo `/api`. Respuestas con `response_model` explícito.
 - Errores con `HTTPException(status_code=404, detail="Run no encontrado: ...")`.
-- Endpoints de solo lectura sobre `models/` → funciones sync normales están bien (FastAPI las pasa a threadpool).
+- Endpoints de solo lectura sobre `training/models/` → funciones sync normales están bien (FastAPI las pasa a threadpool).
 - Leer `eval/evaluations.npz` → convertir a listas Python (`.tolist()`) antes de devolver.
 
 ## 6. Configuración y CORS
@@ -116,7 +116,7 @@ async def sim_ws(ws: WebSocket):
 ## 7. Calidad
 
 - Type hints completos; `from __future__ import annotations`.
-- `ruff check server && ruff format server`.
+- `ruff check backend && ruff format backend`.
 - Logging con `logging.getLogger(__name__)`, no `print`.
 - Tests con `pytest` + `fastapi.testclient.TestClient` (también soporta WebSocket con `client.websocket_connect`):
   - `SimulationSession` sin red: reset reproducible con semilla, comandos cambian el estado.
@@ -126,6 +126,6 @@ async def sim_ws(ws: WebSocket):
 ## 8. Ejecución
 
 ```bash
-.venv/bin/uvicorn server.main:app --reload --port 8000
+.venv/bin/uvicorn backend.main:app --reload --port 8000
 ```
-Dependencias nuevas → `requirements.txt` (`fastapi`, `uvicorn[standard]`, `pytest`, `httpx`).
+Dependencias nuevas → `backend/requirements.txt` (las de RL van en `training/requirements.txt`; las de desarrollo en el `requirements.txt` raíz).

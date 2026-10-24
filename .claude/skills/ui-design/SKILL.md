@@ -146,7 +146,7 @@ Contrastes medidos contra `--background` (#f4ecd8). Los de texto cumplen AA (≥
 | Estado | Diseño |
 |---|---|
 | Cargando | Skeleton redondeado color `--border` al 40 % con la forma del contenido |
-| Vacío | Widget con icono + acción: "Aún no hay travesías registradas. Entrena un modelo con `python -m scripts.train`" |
+| Vacío | Widget con icono + acción: "Aún no hay travesías registradas. Entrena un modelo con `python -m training.train`" |
 | Error | Tarjeta redondeada con fondo `--danger` al 8 % y borde `--danger` al 30 %, icono, causa y acción ("Reintentar") |
 | Desconectado | Badge en cabecera + carta atenuada (velo papel 50 %) + "Reconectando con el servidor…" |
 

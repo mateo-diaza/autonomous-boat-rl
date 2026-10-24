@@ -8,9 +8,9 @@ from __future__ import annotations
 import numpy as np
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from server.models_cache import action_probabilities
-from server.schemas import EpisodeEndMsg, ModelRef, SimState
-from src.boat_env import BoatEnv
+from backend.models_cache import action_probabilities
+from backend.schemas import EpisodeEndMsg, ModelRef, SimState
+from training.boat_env import BoatEnv
 
 STRAIGHT = 1  # acción sin modelo: seguir recto
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from server.config import DEFAULT_SPEED, END_PAUSE_S
+from backend.config import DEFAULT_SPEED, END_PAUSE_S
 
 MAX_STEPS_PER_TICK = 16      # evita ráfagas si un tick llega tarde
 MAX_TICK_ELAPSED_S = 0.25

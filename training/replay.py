@@ -6,11 +6,11 @@ compara directamente la evolución de la política.
     ESPACIO  saltar episodio     N  siguiente checkpoint     ESC  salir
 
 Uso:
-    python -m scripts.replay models/dqn_xxx                 # todos los checkpoints
-    python -m scripts.replay models/dqn_xxx --every 2       # uno de cada dos
-    python -m scripts.replay models/ppo_demo --upto 25000   # solo el tramo donde aprende
-    python -m scripts.replay models/ppo_demo --max-steps 300 --stochastic
-    python -m scripts.replay models/dqn_xxx/best/best_model.zip --episodes 10
+    python -m training.replay training/models/ppo                  # todos los checkpoints
+    python -m training.replay training/models/ppo --every 2        # uno de cada dos
+    python -m training.replay training/models/ppo --upto 20000     # solo el tramo donde aprende
+    python -m training.replay training/models/ppo --max-steps 300 --stochastic
+    python -m training.replay training/models/ppo/best/best_model.zip --episodes 10
 """
 
 import argparse
@@ -21,8 +21,8 @@ from pathlib import Path
 import pygame
 from stable_baselines3 import DQN, PPO
 
-from scripts.train import parse_obstacles
-from src.boat_env import BoatEnv
+from training.boat_env import BoatEnv
+from training.train import parse_obstacles
 
 ALGOS = {"dqn": DQN, "ppo": PPO}
 

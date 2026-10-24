@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-MODELS_DIR = ROOT / "models"
+from training.paths import MODELS_DIR
 
 CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 

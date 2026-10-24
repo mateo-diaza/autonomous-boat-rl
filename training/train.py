@@ -7,7 +7,7 @@ Estructura de salida:
     models/<run>/final.zip
     logs/<run>_1/                         TensorBoard (tensorboard --logdir logs)
 
-Uso: python -m scripts.train --algo ppo --obstacles 4-10 --run ppo_progresion
+Uso: python -m training.train --algo ppo --obstacles 4-10 --run ppo_progresion
 
 Por defecto se entrena poco y se guardan muchos checkpoints (~30): el agente aprende pronto y lo
 interesante para la demo es ver la progresión, no exprimir los últimos puntos de rendimiento.
@@ -16,16 +16,14 @@ interesante para la demo es ver la progresión, no exprimir los últimos puntos 
 import argparse
 import json
 import time
-from pathlib import Path
 
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from src.boat_env import BoatEnv
-
-ROOT = Path(__file__).resolve().parent.parent
+from training.boat_env import BoatEnv
+from training.paths import LOGS_DIR, MODELS_DIR
 
 
 def parse_obstacles(s: str):
@@ -105,7 +103,7 @@ def main():
     ckpt_freq = args.ckpt_freq or defaults.get("ckpt_freq") or n_envs * n_steps
     obstacles = parse_obstacles(args.obstacles)
     run = args.run or f"{args.algo}_{time.strftime('%Y%m%d_%H%M%S')}"
-    run_dir = ROOT / "models" / run
+    run_dir = MODELS_DIR / run
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(json.dumps(
         {"algo": args.algo, "obstacles": args.obstacles, "steps": steps, "seed": args.seed,
@@ -126,7 +124,7 @@ def main():
                      deterministic=True),
     ]
 
-    model = build_model(args.algo, env, args.seed, str(ROOT / "logs"), n_steps, lr, n_epochs)
+    model = build_model(args.algo, env, args.seed, str(LOGS_DIR), n_steps, lr, n_epochs)
     # Checkpoint en el paso 0: el agente sin entrenar, para que el replay empiece desde cero
     model.save(run_dir / "checkpoints" / f"{args.algo}_0_steps")
     model.learn(total_timesteps=steps, callback=callbacks, tb_log_name=run, progress_bar=False)

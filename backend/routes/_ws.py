@@ -10,11 +10,11 @@ from fastapi import WebSocket, status
 from pydantic import BaseModel, ValidationError
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from server.config import CORS_ORIGINS, SIM_HZ, SPEED_LIMITS
-from server.models_cache import load_model
-from server.runs import checkpoint_path, read_config
-from server.schemas import ModelRef, WorldInfo
-from src.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
+from backend.config import CORS_ORIGINS, SIM_HZ, SPEED_LIMITS
+from backend.models_cache import load_model
+from backend.runs import checkpoint_path, read_config
+from backend.schemas import ModelRef, WorldInfo
+from training.boat_env import DT, EDIT_RADIUS_LIMITS, MAX_STEPS, N_RAYS, RAY_RANGE, WORLD_SIZE
 
 WORLD = WorldInfo(
     size=WORLD_SIZE, ray_range=RAY_RANGE, n_rays=N_RAYS, dt=DT, max_steps=MAX_STEPS,

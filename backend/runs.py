@@ -1,11 +1,11 @@
-"""Descubre los entrenamientos guardados en models/ (solo lectura de disco).
+"""Descubre los entrenamientos guardados en training/models/ (solo lectura de disco).
 
-Estructura esperada (la genera scripts/train.py):
-    models/<run>/config.json
-    models/<run>/checkpoints/<algo>_<steps>_steps.zip
-    models/<run>/final.zip
-    models/<run>/best/best_model.zip
-    models/<run>/eval/evaluations.npz
+Estructura esperada en training/models/ (la genera training/train.py):
+    training/models/<run>/config.json
+    training/models/<run>/checkpoints/<algo>_<steps>_steps.zip
+    training/models/<run>/final.zip
+    training/models/<run>/best/best_model.zip
+    training/models/<run>/eval/evaluations.npz
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-from server.schemas import CheckpointInfo, CurvePoint, RunDetail, RunSummary
+from backend.schemas import CheckpointInfo, CurvePoint, RunDetail, RunSummary
 
 _STEPS_RE = re.compile(r"_(\d+)_steps\.zip$")
 _RUN_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -74,7 +74,7 @@ def _run_dir(models_dir: Path, run_id: str) -> Path:
         or not run_dir.is_relative_to(models_dir.resolve())
         or not (run_dir / "config.json").is_file()
     ):
-        raise RunNotFoundError(f"Run no encontrado: {run_id!r}. ¿Lo has entrenado con scripts/train.py?")
+        raise RunNotFoundError(f"Run no encontrado: {run_id!r}. ¿Lo has entrenado con training/train.py?")
     return run_dir
 
 

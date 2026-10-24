@@ -1,0 +1,4 @@
+# Backend: usa el entorno y los modelos del módulo de entrenamiento
+-r ../training/requirements.txt
+fastapi
+uvicorn[standard]

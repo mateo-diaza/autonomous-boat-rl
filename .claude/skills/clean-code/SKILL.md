@@ -1,6 +1,6 @@
 ---
 name: clean-code
-description: Principios de código limpio, patrones de diseño y convenciones de commits para el proyecto autonomous-boat-rl (Python y TypeScript). Úsala SIEMPRE antes de escribir o refactorizar código en cualquier parte del repo (src/, scripts/, server/, frontend/), al diseñar módulos nuevos, al decidir dónde va una responsabilidad o al hacer commits.
+description: Principios de código limpio, patrones de diseño y convenciones de commits para el proyecto autonomous-boat-rl (Python y TypeScript). Úsala SIEMPRE antes de escribir o refactorizar código en cualquier parte del repo (training/, backend/, frontend/), al diseñar módulos nuevos, al decidir dónde va una responsabilidad o al hacer commits.
 ---
 
 # Clean code en autonomous-boat-rl
@@ -16,7 +16,7 @@ Calidad sí, sobreingeniería no.
    Si para describir una función necesitas "y", probablemente son dos.
 4. **DRY con criterio.** Duplicar dos veces es aceptable; a la tercera, extrae. Nunca extraigas
    código que se parece pero cambia por motivos distintos.
-5. **Fronteras claras.** El RL (src/) no sabe nada de la web; el servidor (server/) no sabe nada de
+5. **Fronteras claras.** El RL (training/) no sabe nada de la web; el backend (backend/) no sabe nada de
    cómo se pinta; el frontend no sabe nada de SB3. Se comunican por contratos tipados.
 6. **Falla pronto y con un mensaje útil.** Valida en los bordes (entrada HTTP, mensajes WS, CLI);
    dentro del núcleo confía en los tipos.
@@ -43,14 +43,14 @@ Calidad sí, sobreingeniería no.
 - Explican **por qué**, no **qué**. El qué lo dice el código.
 - Docstring breve en funciones públicas y módulos. Sin repetir los tipos que ya están en la firma.
 - Prohibido el código comentado "por si acaso": para eso está git.
-- Iguala la densidad de comentarios del código que te rodea (src/boat_env.py es la referencia).
+- Iguala la densidad de comentarios del código que te rodea (training/boat_env.py es la referencia).
 
 ## 5. Errores
 
 - Python: excepciones específicas (`ValueError`, `FileNotFoundError`, propias si aportan), nunca `except:` desnudo
   ni `except Exception: pass`.
 - TypeScript: nunca tragarse errores. En la UI, todo error acaba en un estado visible (toast, banner) — ver skill `ui-design`.
-- Los mensajes de error dicen qué pasó y qué hacer: `"Checkpoint no encontrado: models/x/y.zip. ¿Has entrenado el run 'x'?"`.
+- Los mensajes de error dicen qué pasó y qué hacer: `"Checkpoint no encontrado: training/models/x/y.zip. ¿Has entrenado el run 'x'?"`.
 
 ## 6. Patrones de diseño que SÍ aplican aquí
 
@@ -84,7 +84,7 @@ capas Repository/UnitOfWork sobre ficheros (no hay base de datos).
 
 - Ficheros < ~300 líneas. Si crece, divide por responsabilidad, no por tipo técnico arbitrario.
 - Imports ordenados: stdlib, terceros, propios (ruff/isort lo hace solo en Python; ESLint en TS).
-- Nada de imports circulares: `src/` no importa de `server/` ni de `scripts/`.
+- Nada de imports circulares: `training/` nunca importa de `backend/` (el backend sí usa `training/`).
 
 ## 9. Herramientas de calidad
 
@@ -99,4 +99,4 @@ capas Repository/UnitOfWork sobre ficheros (no hay base de datos).
   ni ninguna mención a Claude.**
 - Mensaje en español, en imperativo, ≤ 72 caracteres en la primera línea: `Añade WebSocket de simulación`.
 - Un commit por cambio coherente. Separa los cambios del usuario de los propios.
-- No commitear `models/`, `logs/`, `node_modules/`, `.next/`, `.venv/` (ver `.gitignore`).
+- No commitear `training/models/`, `training/logs/`, `node_modules/`, `.next/`, `.venv/` (ver `.gitignore`).

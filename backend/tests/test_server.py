@@ -3,8 +3,8 @@
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
-from server.models_cache import load_model
-from server.schemas import (
+from backend.models_cache import load_model
+from backend.schemas import (
     AddObstacleCmd,
     MoveObstacleCmd,
     PlayCmd,
@@ -14,8 +14,8 @@ from server.schemas import (
     SetGoalCmd,
     StepCmd,
 )
-from server.simulation import SimulationSession
-from tests.conftest import RUN
+from backend.simulation import SimulationSession
+from backend.tests.conftest import RUN
 
 
 # --------------------------------------------------------------------------- REST
@@ -87,7 +87,7 @@ def test_session_tick_advances_by_speed_and_reports_episode_end(models_dir):
 
 
 def test_session_with_model_reports_probabilities(models_dir):
-    from server.schemas import ModelRef
+    from backend.schemas import ModelRef
 
     s = SimulationSession(seed=0)
     model = load_model(models_dir / RUN / "final.zip", "ppo")

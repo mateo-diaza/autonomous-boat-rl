@@ -2,10 +2,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-models/*
-!models/.gitkeep
-logs/*
-!logs/.gitkeep
+training/models/*
+!training/models/.gitkeep
+training/logs/*
+!training/logs/.gitkeep
 *.mp4
 *.gif
 .DS_Store

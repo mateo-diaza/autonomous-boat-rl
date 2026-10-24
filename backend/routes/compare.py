@@ -11,10 +11,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from server.comparison import ComparisonSession, run_tournament
-from server.config import get_models_dir
-from server.routes._ws import WORLD, Connection, accept_local, first_error, load_checkpoint, run_loop
-from server.schemas import (
+from backend.comparison import ComparisonSession, run_tournament
+from backend.config import get_models_dir
+from backend.routes._ws import WORLD, Connection, accept_local, first_error, load_checkpoint, run_loop
+from backend.schemas import (
     CompareLoadModelCmd,
     ErrorMsg,
     HelloMsg,

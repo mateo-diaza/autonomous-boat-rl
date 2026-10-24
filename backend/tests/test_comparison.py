@@ -2,10 +2,10 @@
 
 import pytest
 
-from server.comparison import ComparisonSession, run_tournament
-from server.models_cache import load_model
-from server.schemas import ModelRef, PlayCmd, ResetScoresCmd, RestartCmd, SetAutoResetCmd, StepCmd
-from tests.conftest import RUN
+from backend.comparison import ComparisonSession, run_tournament
+from backend.models_cache import load_model
+from backend.schemas import ModelRef, PlayCmd, ResetScoresCmd, RestartCmd, SetAutoResetCmd, StepCmd
+from backend.tests.conftest import RUN
 
 
 def lanes(session: ComparisonSession):

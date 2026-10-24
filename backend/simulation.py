@@ -9,10 +9,10 @@ from __future__ import annotations
 import numpy as np
 from stable_baselines3.common.base_class import BaseAlgorithm
 
-from server.config import DEFAULT_OBSTACLES
-from server.lane import Lane
-from server.playback import Playback
-from server.schemas import (
+from backend.config import DEFAULT_OBSTACLES
+from backend.lane import Lane
+from backend.playback import Playback
+from backend.schemas import (
     AddObstacleCmd,
     ClientCommand,
     EpisodeEndMsg,

@@ -1,9 +1,9 @@
 ---
 name: rl-environment
-description: Cómo modificar o extender el entorno Gymnasium BoatEnv (src/boat_env.py) y el entrenamiento de autonomous-boat-rl - añadir variantes de dificultad (recompensa escasa, corrientes, trampa en U, obstáculos móviles, ruido en sensores, curriculum), cambiar observación, acciones o recompensa, y mantener la compatibilidad con modelos entrenados, el replay y el servidor web. Úsala siempre que toques src/, scripts/train.py o la definición de problemas.
+description: Cómo modificar o extender el entorno Gymnasium BoatEnv (training/boat_env.py) y el entrenamiento de autonomous-boat-rl - añadir variantes de dificultad (recompensa escasa, corrientes, trampa en U, obstáculos móviles, ruido en sensores, curriculum), cambiar observación, acciones o recompensa, y mantener la compatibilidad con modelos entrenados, el replay y el servidor web. Úsala siempre que toques training/ (boat_env.py, train.py) o la definición de problemas.
 ---
 
-# Entorno de RL (src/boat_env.py)
+# Entorno de RL (training/boat_env.py)
 
 Lee también `clean-code`.
 
@@ -17,7 +17,7 @@ Lee también `clean-code`.
 - Observaciones `float32` dentro de los límites del `observation_space` (se recortan con `np.clip`).
 - `info["is_success"]` al final del episodio (lo usan SB3, EvalCallback y el replay) e `info["event"]` ∈ {`goal`, `crash`, `timeout`}.
 - Reproducibilidad: toda aleatoriedad sale de `self.np_random` (nunca `np.random` global ni `random`).
-- `src/` no importa nada de `server/` ni de `scripts/`.
+- `training/` no importa nada de `backend/` ni de `frontend/`.
 
 ## 2. Compatibilidad con modelos ya entrenados
 
@@ -27,7 +27,7 @@ Un modelo depende de la **forma y el significado** de la observación y las acci
   hazlo como variante nueva y entrena un run nuevo; no lo cambies en el entorno por defecto.
 - Cambiar física o recompensa no rompe la carga, pero sí el comportamiento: documenta en el commit
   qué runs quedan obsoletos.
-- Cada run guarda su configuración en `models/<run>/config.json`. Si añades parámetros de entorno,
+- Cada run guarda su configuración en `training/models/<run>/config.json`. Si añades parámetros de entorno,
   **guárdalos ahí** para que replay y servidor reconstruyan exactamente el mismo entorno.
 
 ## 3. Cómo añadir una variante de dificultad
@@ -37,7 +37,7 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
 1. Parámetro en el constructor con valor por defecto que mantiene el comportamiento actual
    (p. ej. `current_strength: float = 0.0`, `reward_mode: Literal["shaped", "sparse"] = "shaped"`).
 2. Lógica encapsulada en un método privado pequeño (`_apply_current`, `_compute_reward`).
-3. Registrar el problema en un catálogo único, p. ej. `src/problems.py`:
+3. Registrar el problema en un catálogo único, p. ej. `training/problems.py`:
    ```python
    PROBLEMS = {
        "base":    Problem(title="Base", description="...", env_kwargs={"n_obstacles": (4, 10)}),
@@ -66,7 +66,7 @@ Preferir **composición y parámetros** a subclases en cadena (patrón Strategy 
 - `reset(options={"start": [x, y], "goal": [x, y], "heading": rad, "obstacles": [[x, y, r], ...]})`
   fija el escenario desde fuera (lo omitido es aleatorio); valida y recorta a los límites del mundo.
 - Edición en vivo sin reiniciar: `set_obstacles([[x, y, r], ...])` y `set_goal([x, y])`.
-- Toda variante nueva debe conservar estas tres APIs y sus tests en `tests/test_boat_env.py`.
+- Toda variante nueva debe conservar estas tres APIs y sus tests en `training/tests/test_boat_env.py`.
 
 ## 6. Validación de cada cambio
 

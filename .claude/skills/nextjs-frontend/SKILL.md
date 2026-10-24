@@ -57,7 +57,7 @@ frontend/src/
 │                           # useRuns, useRunDetail, useHotkeys
 └── lib/
     ├── config.ts
-    ├── types.ts            # espejo de server/schemas.py
+    ├── types.ts            # espejo de backend/schemas.py
     ├── api.ts              # fetchers REST tipados
     ├── format.ts, episodes.ts, checkpoints.ts
     ├── sim/                # FrameStore (estados fuera de React, interpolación, estela), placement
@@ -75,7 +75,7 @@ frontend/src/
 
 ## 4. Contrato con el backend
 
-- `lib/types.ts` replica `server/schemas.py` con **los mismos nombres de campo (snake_case)**.
+- `lib/types.ts` replica `backend/schemas.py` con **los mismos nombres de campo (snake_case)**.
 - Mensajes como uniones discriminadas por `type`, con `switch` exhaustivo:
 
 ```ts

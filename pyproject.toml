@@ -1,0 +1,17 @@
+# Configuración de las herramientas Python del repo (entrenamiento + backend).
+# No es un paquete instalable: los comandos se lanzan desde la raíz (python -m training.train, uvicorn backend.main:app).
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["frontend"]
+
+[tool.ruff.lint]
+# Errores, pyflakes, imports ordenados, modernización y bugs probables
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["training", "backend"]
+
+[tool.pytest.ini_options]
+testpaths = ["training/tests", "backend/tests"]

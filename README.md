@@ -1,6 +1,32 @@
 # Barco autónomo con Reinforcement Learning
 
-Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (DQN / PPO con Stable-Baselines3).
+Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (PPO / DQN con
+Stable-Baselines3), con una web para ver en vivo cómo navega y cómo ha ido aprendiendo.
+
+## Estructura
+
+```
+autonomous-boat-rl/
+├── training/            # Módulo de RL (Python)
+│   ├── boat_env.py      #   entorno Gymnasium BoatEnv
+│   ├── train.py         #   entrenamiento con checkpoints
+│   ├── play.py          #   control manual con teclado (pygame)
+│   ├── replay.py        #   reproducir checkpoints en pygame
+│   ├── paths.py         #   dónde se guardan modelos y logs
+│   ├── models/          #   checkpoints por run (no versionados; _archivo/ no se muestra en la web)
+│   ├── logs/            #   TensorBoard (no versionados)
+│   └── tests/
+├── backend/             # API FastAPI + WebSockets de simulación en vivo (Python, usa training/)
+│   ├── routes/          #   REST de runs, /ws/sim (navegación), /ws/compare (comparativa)
+│   └── tests/
+├── frontend/            # Web Next.js (TypeScript)
+├── package.json         # arranque conjunto de la demo (pnpm dev)
+├── requirements.txt     # dependencias Python de todo el repo (incluye training/ y backend/)
+└── pyproject.toml       # configuración de ruff y pytest
+```
+
+Dependencias entre módulos: `frontend → backend → training`. `training/` no depende de nada del resto.
+Todos los comandos se lanzan **desde la raíz del repo**.
 
 ## Instalación
 
@@ -8,23 +34,15 @@ Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta 
 python -m venv .venv
 source .venv/bin/activate
 pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
+pip install -r requirements.txt          # o solo training/requirements.txt para entrenar
+
+pnpm install && pnpm --dir frontend install   # web (Node.js ≥ 20.9 y pnpm)
 ```
 
-## Estructura
-
-- `src/` — entorno Gymnasium (`BoatEnv`) y utilidades
-- `scripts/` — entrenamiento, evaluación y control manual
-- `models/` — checkpoints de los agentes (no versionados). Lo que hay en `models/_archivo/` no se muestra en la web
-- `logs/` — logs de TensorBoard (no versionados)
-
-## Demo web (backend + frontend)
-
-Requisitos adicionales: Node.js ≥ 20.9 y pnpm.
+## Demo web
 
 ```bash
-pnpm install && pnpm --dir frontend install   # una sola vez
-pnpm dev                                      # API en :8000 + web en http://localhost:3000
+pnpm dev     # API en :8000 (docs en /docs) + web en http://localhost:3000
 ```
 
 La web tiene dos modos (selector en la cabecera):
@@ -34,44 +52,39 @@ La web tiene dos modos (selector en la cabecera):
 - **Comparativa**: dos modelos (A y B) navegan a la vez exactamente el mismo escenario, con marcador acumulado
   y **torneo rápido** (20/50/100 escenarios simulados sin animación en unos segundos).
 
-## Uso
+Por separado: `pnpm dev:api` o `pnpm dev:web`.
 
-Todos los comandos se lanzan desde la raíz del repo con el venv activado.
+## Entrenamiento (`training/`)
 
 ```bash
 # Probar el entorno a mano (← → girar, R reiniciar, ESC salir)
-python -m scripts.play
+python -m training.play
 
-# Entrenar (checkpoints en models/<run>/checkpoints, mejor modelo en models/<run>/best).
-# Por defecto: entrenamientos cortos con ~30 checkpoints para ver la progresión del aprendizaje:
+# Entrenar. Por defecto: entrenamientos cortos con ~30 checkpoints para ver la progresión del aprendizaje
 #   PPO: 30k pasos, 1 checkpoint por actualización (cada 1024 pasos)  -> ~1 min
 #   DQN: 50k pasos, 1 checkpoint cada 2.5k pasos                      -> ~1 min
-python -m scripts.train --algo ppo --run ppo
-python -m scripts.train --algo dqn --run dqn
+python -m training.train --algo ppo --run ppo
+python -m training.train --algo dqn --run dqn
 # Todo es configurable: --steps, --ckpt-freq, --n-envs, --n-steps, --n-epochs, --lr, --obstacles
 
-# Ver cómo aprende: reproduce los checkpoints en orden sobre los mismos escenarios
-python -m scripts.replay models/ppo --every 2
+# Ver cómo aprende en pygame: reproduce los checkpoints en orden sobre los mismos escenarios
+python -m training.replay training/models/ppo --every 2
 # (ESPACIO salta episodio, N salta checkpoint, ESC sale)
-
-# Solo el tramo donde aprende, cortando episodios a 300 pasos y con acciones muestreadas
-python -m scripts.replay models/ppo --upto 20000 --max-steps 300 --stochastic
-
-# Ver el agente final
-python -m scripts.replay models/ppo/best/best_model.zip --episodes 10
-
-# Servidor web (API REST + simulación en vivo por WebSocket); docs en http://localhost:8000/docs
-uvicorn server.main:app --reload --port 8000
-
-# Tests y lint
-python -m pytest tests
-ruff check src scripts server tests
+python -m training.replay training/models/ppo --upto 20000 --max-steps 300 --stochastic
+python -m training.replay training/models/ppo/best/best_model.zip --episodes 10
 
 # Curvas de aprendizaje (rollout/success_rate, eval/mean_reward...)
-tensorboard --logdir logs
+tensorboard --logdir training/logs
 ```
 
-## Entorno (`src/boat_env.py`)
+## Calidad
+
+```bash
+pnpm test    # pytest (training/tests + backend/tests)
+pnpm lint    # ESLint (frontend) + ruff (training, backend)
+```
+
+## Entorno (`training/boat_env.py`)
 
 - **Acciones**: `Discrete(3)` → girar izquierda / recto / girar derecha. Velocidad constante; el giro tiene inercia.
 - **Observación** (17 dims): 12 rayos lidar en 180° frontales, sin/cos del ángulo a la meta, distancia a la meta, velocidad angular y velocidad lineal.

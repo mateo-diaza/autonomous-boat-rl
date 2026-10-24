@@ -10,10 +10,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from server.config import get_models_dir
-from server.routes._ws import WORLD, Connection, accept_local, first_error, load_checkpoint, run_loop
-from server.schemas import ErrorMsg, HelloMsg, LoadModelCmd, command_adapter
-from server.simulation import SimulationSession
+from backend.config import get_models_dir
+from backend.routes._ws import WORLD, Connection, accept_local, first_error, load_checkpoint, run_loop
+from backend.schemas import ErrorMsg, HelloMsg, LoadModelCmd, command_adapter
+from backend.simulation import SimulationSession
 
 log = logging.getLogger(__name__)
 router = APIRouter()

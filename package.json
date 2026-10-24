@@ -4,10 +4,10 @@
   "description": "Arranque conjunto de la demo: backend FastAPI + frontend Next.js",
   "scripts": {
     "dev": "concurrently --kill-others-on-fail -n api,web -c blue,magenta \"pnpm dev:api\" \"pnpm dev:web\"",
-    "dev:api": ".venv/bin/uvicorn server.main:app --reload --port 8000",
+    "dev:api": ".venv/bin/uvicorn backend.main:app --reload --port 8000 --reload-dir backend --reload-dir training",
     "dev:web": "pnpm --dir frontend dev",
-    "lint": "pnpm --dir frontend lint && .venv/bin/ruff check src scripts server tests",
-    "test": ".venv/bin/python -m pytest tests"
+    "lint": "pnpm --dir frontend lint && .venv/bin/ruff check training backend",
+    "test": ".venv/bin/python -m pytest"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

@@ -55,7 +55,7 @@ export function ModelPicker(props: ModelPickerProps) {
       ) : runs.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Aún no hay travesías registradas. Entrena un modelo con{" "}
-          <code className="font-mono text-foreground">python -m scripts.train</code>.
+          <code className="font-mono text-foreground">python -m training.train</code>.
         </p>
       ) : (
         <div className="flex flex-col gap-4">
