@@ -3,6 +3,37 @@
 Simulador 2D de un barco que aprende a esquivar obstáculos y llegar a una meta mediante RL (DQN con
 Stable-Baselines3), con una web para ver en vivo cómo navega y cómo ha ido aprendiendo.
 
+**Demo: <https://autonomous-boat-rl.vercel.app/>**. El backend está en el plan gratuito de Render: si lleva un
+rato sin uso, la web muestra «reintentando» durante ~1 minuto mientras despierta, y la simulación va más lenta
+que en local.
+
+## Mares y modelos
+
+Las **condiciones del mar** son el escenario en el que se navega (se eligen en la web y se pueden combinar con
+cualquier modelo). Los **modelos** son los agentes DQN entrenados, numerados de menos a más difícil.
+
+| Mar | Qué tiene |
+|---|---|
+| Mar en calma | El problema original: entre 4 y 10 rocas fijas y una boya. |
+| Corrientes | Una corriente aleatoria de 4–6,5 u/s (casi media velocidad del barco) que lo arrastra de lado. |
+| Trampa en U | Un arrecife en U abierto hacia el barco tapa el camino recto: ir directo lleva a un callejón. |
+| Rocas a la deriva | 5–9 rocas que se mueven a 5–8 u/s y rebotan en los bordes. |
+
+| # | Modelo | Entrenado en | Qué lo distingue | Llegadas* |
+|---|---|---|---|---|
+| 1 | Mar en calma | Mar en calma | Recompensa por acercarse a la boya. El modelo de referencia. | ~87 % |
+| 2 | Sin pistas | Mar en calma | Recompensa escasa: solo premio al llegar y castigo al chocar. Casi no aprende. | ~12 % |
+| 3 | Corrientes | Corrientes | No ve la corriente: tiene que deducirla de cómo deriva. | ~69 % |
+| 4 | Corrientes + sensor | Corrientes | Además mide la corriente. No mejora: más información no siempre ayuda. | ~60 % |
+| 5 | Trampa en U | Trampa en U | Recompensa normal: a veces aprende a rodear la U (el modelo 1 entra siempre). | ~31 % |
+| 6 | Trampa en U + GPS | Trampa en U | Recompensa por ruta navegable y sensor que indica el camino bueno. | ~91 % |
+| 7 | Rocas a la deriva | Rocas a la deriva | Solo ve el instante actual: no sabe hacia dónde se mueve cada roca. | ~55 % |
+| 8 | Rocas a la deriva + memoria | Rocas a la deriva | Ve los últimos 4 instantes (*frame stacking*). Mejora poco. | ~57 % |
+
+\* Porcentaje de llegadas a la boya en 200 escenarios aleatorios de su propio mar (en Corrientes y Rocas a la
+deriva, media de 3 entrenamientos). El % del desplegable de la web es la mejor evaluación durante el
+entrenamiento, sobre 40 escenarios, y suele salir algo más alto.
+
 ## Estructura
 
 ```
