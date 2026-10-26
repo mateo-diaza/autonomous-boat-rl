@@ -44,7 +44,7 @@ U_POSITION = 0.6         # el fondo está al 60 % del camino salida -> boya
 CURRENT_NORM = SPEED     # el sensor mide la corriente en "velocidades del barco": cabe en [-1, 1] sin recortes
 CRASH_REWARD = -100.0
 GOAL_REWARD = 100.0
-MAX_STEPS = 1000
+MAX_STEPS = 500
 
 # --- Generación de escenarios -------------------------------------------------
 OBSTACLE_RADIUS = (3.0, 8.0)
